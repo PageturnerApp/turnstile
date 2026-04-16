@@ -4,6 +4,8 @@
 
 'use strict';
 
+const crypto = require('crypto');
+
 const configStore = require('./config');
 const responses = require('./utils/responses');
 
@@ -28,13 +30,30 @@ function getRequestToken(req) {
 }
 
 /**
+ * Compare two secret strings without leaking useful timing information.
+ * @param {string} expected - Stored secret value.
+ * @param {string} actual - User-supplied secret value.
+ * @returns {boolean}
+ */
+function safeSecretEquals(expected, actual) {
+  const expectedBuffer = Buffer.from(String(expected || ''));
+  const actualBuffer = Buffer.from(String(actual || ''));
+
+  if (expectedBuffer.length !== actualBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(expectedBuffer, actualBuffer);
+}
+
+/**
  * Find an API key record by raw key value.
  * @param {string} token - Raw API key.
  * @returns {Object|null}
  */
 function findApiKey(token) {
   const config = configStore.getConfig();
-  return config.apiKeys.find((apiKey) => apiKey.key === token) || null;
+  return config.apiKeys.find((apiKey) => safeSecretEquals(apiKey.key, token)) || null;
 }
 
 /**
@@ -99,6 +118,7 @@ function requireUiPage(req, res, next) {
 
 module.exports = {
   getRequestToken,
+  safeSecretEquals,
   findApiKey,
   requireApiKey,
   requireUiSession,

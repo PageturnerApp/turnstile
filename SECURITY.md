@@ -23,7 +23,10 @@ Report security issues by opening a private security advisory on GitHub, or by c
 ## Operational Guidance
 
 - Keep `BRIDGE_URL` behind HTTPS.
+- Complete first-run setup immediately after startup. Until `UI_PASSWORD_HASH` is set, anyone who can reach `/ui/setup` can create the UI password.
+- Keep `BRIDGE_URL` accurate because Turnstile uses it as one of the trusted origins for UI state changes.
 - Do not share API keys or generated `servedl` links.
+- Treat query-string tokens as secrets because reverse proxies and access logs may record full URLs.
 - Scope each API key to the narrowest useful categories, indexers, and downloads path.
 - Keep `.env` private and never commit it.
 - Rotate API keys and the UI password if seedbox credentials are shared or exposed.

@@ -1,7 +1,7 @@
 # Turnstile
 ### The self-hosted download provider bridge for Pageturner
 
-Part of the [Pageturner](https://github.com/pageturner-app) project · AGPL v3
+Part of the [Pageturner](https://getpageturner.com) project · AGPL v3
 
 ## What is Turnstile?
 
@@ -340,6 +340,15 @@ curl -X DELETE -b cookie.txt "http://localhost:7878/api/v1/keys/KEY_ID"
 ## Architecture notes
 
 Turnstile never calls torrent clients from routes directly. Routes use `services/torrentclient/index.js`, which returns the configured adapter. Each adapter implements `addMagnet`, `getTorrent`, `getRecentlyAdded`, and `authenticate`, and maps native client state into Turnstile's normalized torrent shape.
+
+## Security notes
+
+- Complete first-run setup immediately after starting Turnstile. Until `UI_PASSWORD_HASH` is set, anyone who can reach `/ui/setup` can create the UI password.
+- Put public installs behind HTTPS and set `BRIDGE_URL` to the HTTPS URL clients will use.
+- The UI uses bcrypt password hashing, HTTP-only session cookies, session regeneration after login, same-origin checks for UI mutations, and in-memory rate limiting for login/setup attempts.
+- API keys are bearer secrets. Query-string tokens are supported for TorBox-compatible clients, but reverse proxies and access logs may record URLs, so keep logs private and rotate exposed keys.
+- Generated download links are authenticated but should still be treated as private.
+- `servedl` resolves files under the global `DOWNLOADS_PATH` root and rejects traversal outside that root.
 
 ## Seeding, ratio, and tracker rules
 
