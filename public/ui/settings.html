@@ -1,0 +1,93 @@
+<!-- Turnstile - Self-hosted download provider bridge
+Part of the Pageturner project: https://github.com/pageturner-app/turnstile
+Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <base href="%BASE_HREF%">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Turnstile Settings</title>
+    <link rel="stylesheet" href="ui/style.css">
+  </head>
+  <body data-page="settings">
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="mark">T</div>
+          <div>
+            <h1>Settings</h1>
+            <div class="muted">Turnstile</div>
+          </div>
+        </div>
+        <nav class="nav">
+          <a href="ui">Dashboard</a>
+          <a href="ui/keys">API Keys</a>
+        </nav>
+      </header>
+
+      <form id="settings-form" class="grid">
+        <section class="panel span-6 stack">
+          <h2>Prowlarr</h2>
+          <label>URL
+            <input name="prowlarrUrl" type="url" autocomplete="url">
+          </label>
+          <label>API Key
+            <input name="prowlarrApiKey" class="mono" type="password" autocomplete="off">
+          </label>
+          <div class="actions">
+            <button type="button" data-test="prowlarr">Test Connection</button>
+          </div>
+        </section>
+
+        <section class="panel span-6 stack">
+          <h2>Torrent Client</h2>
+          <label>Client type
+            <select name="torrentClient">
+              <option value="qbittorrent">qBittorrent</option>
+              <option value="deluge">Deluge</option>
+              <option value="transmission">Transmission</option>
+              <option value="rtorrent">rTorrent</option>
+            </select>
+          </label>
+          <div class="helper">Don't see your client? Open an issue on GitHub.</div>
+          <label>URL
+            <input name="torrentClientUrl" type="url" autocomplete="url">
+          </label>
+          <div class="helper">Include the port and base path. Deluge uses the Web JSON-RPC URL, for example http://127.0.0.1:13355 or https://host.example:443/deluge.</div>
+          <label>Username
+            <input name="torrentClientUser" autocomplete="username">
+          </label>
+          <label>Password
+            <input name="torrentClientPass" type="password" autocomplete="current-password">
+          </label>
+          <div class="actions">
+            <button type="button" data-test="torrent-client">Test Connection</button>
+          </div>
+        </section>
+
+        <section class="panel stack">
+          <h2>Turnstile</h2>
+          <div class="grid">
+            <label class="span-6">Bridge URL
+              <input name="bridgeUrl" type="url" autocomplete="url">
+            </label>
+            <label class="span-6">Downloads Path
+              <input name="downloadsPath" class="mono" autocomplete="off">
+            </label>
+            <label class="span-4">Port
+              <input name="port" type="number" min="1" max="65535">
+            </label>
+          </div>
+          <div class="actions">
+            <button class="primary" type="submit">Save Settings</button>
+          </div>
+        </section>
+      </form>
+
+      <footer class="footer">Part of the Pageturner project · AGPL v3</footer>
+    </main>
+    <div id="toast" class="toast"></div>
+    <script src="ui/app.js"></script>
+  </body>
+</html>

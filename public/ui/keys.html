@@ -1,0 +1,92 @@
+<!-- Turnstile - Self-hosted download provider bridge
+Part of the Pageturner project: https://github.com/pageturner-app/turnstile
+Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <base href="%BASE_HREF%">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Turnstile API Keys</title>
+    <link rel="stylesheet" href="ui/style.css">
+  </head>
+  <body data-page="keys">
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="mark">T</div>
+          <div>
+            <h1>API Keys</h1>
+            <div class="muted">Turnstile</div>
+          </div>
+        </div>
+        <nav class="nav">
+          <a href="ui">Dashboard</a>
+          <a href="ui/settings">Settings</a>
+        </nav>
+      </header>
+
+      <section class="panel stack">
+        <div class="actions">
+          <button id="add-key-button" class="primary" type="button">Add Key</button>
+        </div>
+        <div id="key-form-panel" class="form-band hidden">
+          <h2 id="key-form-title">Add API Key</h2>
+          <form id="key-form" class="stack">
+            <input name="id" type="hidden">
+            <div class="grid">
+              <label class="span-6">Name
+                <input name="name" required>
+              </label>
+              <label class="span-6">Downloads Path
+                <input name="downloads_path" class="mono">
+              </label>
+              <label class="span-6">Categories
+                <input name="categories" placeholder="3030, 3040">
+                <span id="category-helper" class="helper"></span>
+              </label>
+              <label class="span-6">Indexers
+                <input name="indexers" placeholder="Blank = all">
+              </label>
+            </div>
+            <div class="actions">
+              <button class="primary" type="submit">Save Key</button>
+              <button id="cancel-key-button" type="button">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <div class="table-wrap">
+          <table id="keys-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Key</th>
+                <th>Categories</th>
+                <th>Indexers</th>
+                <th>Downloads Path</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="footer">Part of the Pageturner project · AGPL v3</footer>
+    </main>
+
+    <div id="key-modal" class="modal-backdrop">
+      <div class="modal stack">
+        <h2>Save this key now — it will not be shown again.</h2>
+        <div id="new-key-value" class="code-line mono"></div>
+        <div class="actions">
+          <button id="copy-new-key" class="primary" type="button">Copy Key</button>
+          <button data-close-modal type="button">Done</button>
+        </div>
+      </div>
+    </div>
+    <div id="toast" class="toast"></div>
+    <script src="ui/app.js"></script>
+  </body>
+</html>

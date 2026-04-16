@@ -1,0 +1,13 @@
+# Turnstile - Self-hosted download provider bridge
+# Part of the Pageturner project: https://github.com/pageturner-app/turnstile
+# Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html
+
+services:
+  turnstile:
+    build: .
+    ports:
+      - "7878:7878"
+    volumes:
+      - ./.env:/app/.env
+      - /home/user/downloads:/downloads
+    restart: unless-stopped

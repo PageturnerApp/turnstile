@@ -1,0 +1,101 @@
+<!-- Turnstile - Self-hosted download provider bridge
+Part of the Pageturner project: https://github.com/pageturner-app/turnstile
+Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <base href="%BASE_HREF%">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Turnstile</title>
+    <link rel="stylesheet" href="ui/style.css">
+  </head>
+  <body data-page="dashboard">
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="mark">T</div>
+          <div>
+            <h1>Turnstile</h1>
+            <div class="muted">Download provider bridge</div>
+          </div>
+        </div>
+        <nav class="nav">
+          <a href="ui/settings">Settings</a>
+          <a href="ui/keys">API Keys</a>
+          <form method="post" action="ui/logout"><button type="submit">Sign Out</button></form>
+        </nav>
+      </header>
+
+      <section class="grid">
+        <article class="panel span-4 stat">
+          <div>
+            <span class="muted">Version</span>
+            <strong id="version">...</strong>
+          </div>
+          <span class="dot ok"></span>
+        </article>
+        <article class="panel span-4 stat">
+          <div>
+            <span class="muted">Prowlarr</span>
+            <strong id="prowlarr-url" class="mono">...</strong>
+          </div>
+          <span id="prowlarr-dot" class="dot"></span>
+        </article>
+        <article class="panel span-4 stat">
+          <div>
+            <span class="muted">Torrent Client</span>
+            <strong id="torrent-client">...</strong>
+          </div>
+          <span id="torrent-dot" class="dot"></span>
+        </article>
+
+        <article class="panel span-6">
+          <h2>Paths</h2>
+          <div class="stack">
+            <div>
+              <div class="muted">Global downloads path</div>
+              <div id="downloads-path" class="mono code-line">...</div>
+            </div>
+            <div>
+              <div class="muted">Bridge URL</div>
+              <div id="bridge-url" class="mono code-line">...</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel span-6">
+          <h2>Access</h2>
+          <div class="stack">
+            <div class="stat">
+              <div>
+                <span class="muted">Active API keys</span>
+                <strong id="key-count">...</strong>
+              </div>
+              <a class="button primary" href="ui/keys">Manage Keys</a>
+            </div>
+            <div>
+              <div class="muted">Torrent client URL</div>
+              <div id="torrent-url" class="mono code-line">...</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <details>
+            <summary>Pageturner connection instructions</summary>
+            <div class="instructions">
+              <div class="code-line">Sources → Add Download Provider → Self-Hosted</div>
+              <div class="code-line">Bridge URL: <span id="bridge-url-inline">Use the Bridge URL shown above</span></div>
+              <div class="code-line">API Key: create one on the API Keys page</div>
+            </div>
+          </details>
+        </article>
+      </section>
+
+      <footer class="footer">Part of the Pageturner project · AGPL v3</footer>
+    </main>
+    <div id="toast" class="toast"></div>
+    <script src="ui/app.js"></script>
+  </body>
+</html>

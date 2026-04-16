@@ -1,0 +1,39 @@
+# Turnstile - Self-hosted download provider bridge
+# Part of the Pageturner project: https://github.com/pageturner-app/turnstile
+# Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version:
+          - 18
+          - 20
+          - 22
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run syntax checks
+        run: npm test
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev

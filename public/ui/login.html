@@ -1,0 +1,33 @@
+<!-- Turnstile - Self-hosted download provider bridge
+Part of the Pageturner project: https://github.com/pageturner-app/turnstile
+Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <base href="%BASE_HREF%">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Turnstile Login</title>
+    <link rel="stylesheet" href="ui/style.css">
+  </head>
+  <body>
+    <main class="auth-wrap">
+      <section class="auth-card stack">
+        <div class="brand">
+          <div class="mark">T</div>
+          <div>
+            <h1>Turnstile</h1>
+            <div class="muted">Sign in</div>
+          </div>
+        </div>
+        <form class="stack" method="post" action="ui/login">
+          <label>Password
+            <input name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <button class="primary" type="submit">Sign In</button>
+        </form>
+        <footer class="footer">Part of the Pageturner project · AGPL v3</footer>
+      </section>
+    </main>
+  </body>
+</html>

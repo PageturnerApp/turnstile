@@ -1,0 +1,49 @@
+{
+  "name": "turnstile",
+  "version": "1.0.0",
+  "description": "Self-hosted download provider bridge for Pageturner",
+  "main": "index.js",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pageturner-app/turnstile.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pageturner-app/turnstile/issues"
+  },
+  "homepage": "https://github.com/pageturner-app/turnstile#readme",
+  "keywords": [
+    "pageturner",
+    "prowlarr",
+    "seedbox",
+    "torrent",
+    "download-provider"
+  ],
+  "files": [
+    "index.js",
+    "auth.js",
+    "config.js",
+    "utils/",
+    "routes/",
+    "services/",
+    "public/",
+    ".env.example",
+    "Dockerfile",
+    "docker-compose.yml"
+  ],
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --check index.js && find auth.js config.js routes services utils public/ui -name '*.js' -print0 | xargs -0 -n1 node --check"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "express-session": "^1.18.0",
+    "uuid": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
