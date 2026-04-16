@@ -6,7 +6,7 @@
 
 # Turnstile
 
-### The self-hosted download provider bridge for [Pageturner](https://getpageturner.com)
+### A self-hosted download provider bridge for [Pageturner](https://getpageturner.com) and other apps
 
 [![CI](https://github.com/PageturnerApp/turnstile/actions/workflows/ci.yml/badge.svg)](https://github.com/PageturnerApp/turnstile/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/github/license/PageturnerApp/turnstile?color=3A9E6B)](LICENSE)
@@ -21,7 +21,7 @@ Part of the [Pageturner](https://getpageturner.com) project · AGPL v3
 
 ## What is Turnstile?
 
-Turnstile lets you use any private tracker (like MyAnonamouse) or public indexer as a download source in Pageturner and other compatible apps, via your own seedbox. It wraps Prowlarr and your torrent client in a clean authenticated API that Pageturner treats identically to TorBox or Real-Debrid.
+Turnstile lets Pageturner, and any other app that speaks its open API, use your private trackers and public indexers as download sources through your own seedbox. It wraps Prowlarr and your torrent client in a clean authenticated bridge that feels like a normal download provider to the apps you connect.
 
 ## Supported torrent clients
 
@@ -32,7 +32,7 @@ Turnstile lets you use any private tracker (like MyAnonamouse) or public indexer
 
 ## Compatible apps
 
-Turnstile's API is open — any app can integrate. Currently supported: Pageturner. To add your app open an issue on GitHub.
+Turnstile is built for Pageturner first, but its API is open so other apps can integrate too. If you are adding support in another app, open an issue or PR and we will help keep the bridge friendly to shared use.
 
 ## Prerequisites
 
