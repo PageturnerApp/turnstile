@@ -6,12 +6,12 @@
   "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pageturner-app/turnstile.git"
+    "url": "git+https://github.com/PageturnerApp/turnstile.git"
   },
   "bugs": {
-    "url": "https://github.com/pageturner-app/turnstile/issues"
+    "url": "https://github.com/PageturnerApp/turnstile/issues"
   },
-  "homepage": "https://github.com/pageturner-app/turnstile#readme",
+  "homepage": "https://github.com/PageturnerApp/turnstile#readme",
   "keywords": [
     "pageturner",
     "prowlarr",
@@ -26,6 +26,7 @@
     "utils/",
     "routes/",
     "services/",
+    "docs/assets/",
     "public/",
     ".env.example",
     "Dockerfile",

@@ -1,7 +1,23 @@
+<p align="center">
+  <img src="docs/assets/turnstile-logo.png" alt="Turnstile logo" width="180">
+</p>
+
+<div align="center">
+
 # Turnstile
-### The self-hosted download provider bridge for Pageturner
+
+### The self-hosted download provider bridge for [Pageturner](https://getpageturner.com)
+
+[![CI](https://github.com/PageturnerApp/turnstile/actions/workflows/ci.yml/badge.svg)](https://github.com/PageturnerApp/turnstile/actions/workflows/ci.yml)
+[![License: AGPL v3](https://img.shields.io/github/license/PageturnerApp/turnstile?color=3A9E6B)](LICENSE)
+[![Node.js >=18](https://img.shields.io/badge/node-%3E%3D18-3A9E6B)](package.json)
+[![Docker ready](https://img.shields.io/badge/docker-ready-3A9E6B)](Dockerfile)
+[![CommonJS](https://img.shields.io/badge/modules-commonjs-3A9E6B)](package.json)
+[![Prowlarr bridge](https://img.shields.io/badge/prowlarr-bridge-3A9E6B)](#what-is-turnstile)
 
 Part of the [Pageturner](https://getpageturner.com) project · AGPL v3
+
+</div>
 
 ## What is Turnstile?
 
@@ -58,7 +74,7 @@ node --version  # must be v18+
 
 ```bash
 cd ~
-git clone https://github.com/pageturner-app/turnstile
+git clone https://github.com/PageturnerApp/turnstile
 cd turnstile
 ```
 
@@ -207,7 +223,7 @@ If your service uses the Node 22 workaround from Step 8, keep the `--no-experime
 ## Installation — Docker
 
 ```bash
-git clone https://github.com/pageturner-app/turnstile
+git clone https://github.com/PageturnerApp/turnstile
 cd turnstile
 cp .env.example .env
 nano .env  # fill in your config
@@ -218,7 +234,7 @@ docker compose up -d
 ## Installation — Bare Node
 
 ```bash
-git clone https://github.com/pageturner-app/turnstile
+git clone https://github.com/PageturnerApp/turnstile
 cd turnstile
 npm install
 cp .env.example .env
