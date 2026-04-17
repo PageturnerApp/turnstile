@@ -11,7 +11,10 @@ const DEFAULT_SEARCH_LIMIT = 10;
 const REQUEST_TIMEOUT_MS = 15000;
 const PROWLARR_SEARCH_PATH = '/api/v1/search';
 const PROWLARR_STATUS_PATH = '/api/v1/system/status';
-const PROWLARR_DOWNLOAD_PATTERN = /\/api\/v1\/indexer\/\d+\/download$/;
+const PROWLARR_DOWNLOAD_PATTERNS = [
+  /\/api\/v1\/indexer\/\d+\/download$/,
+  /\/\d+\/download$/
+];
 
 /**
  * Build a full Prowlarr API URL.
@@ -49,7 +52,7 @@ function isProwlarrDownloadUrl(link) {
 
     return candidateUrl.origin === prowlarrUrl.origin
       && normalizedPath.includes(prowlarrUrl.pathname.replace(/\/+$/, ''))
-      && PROWLARR_DOWNLOAD_PATTERN.test(normalizedPath);
+      && PROWLARR_DOWNLOAD_PATTERNS.some((pattern) => pattern.test(normalizedPath));
   } catch (error) {
     return false;
   }

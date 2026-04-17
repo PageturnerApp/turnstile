@@ -360,6 +360,8 @@ curl -X DELETE -b cookie.txt "http://localhost:7878/api/v1/keys/KEY_ID"
 
 Turnstile always gives clients one download URL, even when the finished torrent contains multiple files:
 
+- `/search` prepends local cached matches before remote Prowlarr results.
+- `/torrents/createtorrent` re-checks the local cache before queueing a selected remote result, using normalized title matching to avoid re-adding something that is already downloaded.
 - If the target resolves to a single file, Turnstile serves that file directly with its original filename.
 - If the target resolves to a folder containing exactly one file, Turnstile serves the contained file directly.
 - If the target resolves to a folder containing multiple files, Turnstile streams that folder as a `.zip` archive.

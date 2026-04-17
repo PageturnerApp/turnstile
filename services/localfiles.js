@@ -9,6 +9,56 @@ const path = require('path');
 
 const CASE_INSENSITIVE_LOCALE = 'en';
 const SINGLE_FILE_COUNT = 1;
+const EMPTY_MATCH_SCORE = 0;
+const EXACT_MATCH_SCORE = 100;
+const SUBSTRING_MATCH_SCORE = 90;
+const TOKEN_MATCH_BASE_SCORE = 70;
+const TOKEN_MATCH_MAX_BONUS = 20;
+const MINIMUM_QUERY_LENGTH_FOR_SUBSTRING = 4;
+const MINIMUM_TOKEN_MATCH_COUNT = 2;
+const MINIMUM_TOKEN_COVERAGE = 0.65;
+const BRACKETED_TEXT_PATTERN = /[\[(][^\])]*[\])]/g;
+const FILE_EXTENSION_PATTERN = /\.[a-z0-9]{2,5}$/i;
+const WORD_SEPARATOR_PATTERN = /[^a-z0-9]+/g;
+const MULTIPLE_SPACE_PATTERN = /\s+/g;
+const MATCH_STOP_WORDS = [
+  'a',
+  'an',
+  'and',
+  'book',
+  'by',
+  'edition',
+  'for',
+  'from',
+  'in',
+  'of',
+  'or',
+  'the',
+  'to',
+  'with'
+];
+const MATCH_NOISE_WORDS = [
+  'aac',
+  'abridged',
+  'audio',
+  'audiobook',
+  'azw3',
+  'cbr',
+  'cbz',
+  'complete',
+  'english',
+  'eng',
+  'epub',
+  'flac',
+  'm4a',
+  'm4b',
+  'mobi',
+  'mp3',
+  'pdf',
+  'retail',
+  'unabridged'
+];
+const IGNORED_MATCH_TOKENS = new Set(MATCH_STOP_WORDS.concat(MATCH_NOISE_WORDS));
 
 /**
  * Convert a search value into a case-insensitive match token.
@@ -17,6 +67,87 @@ const SINGLE_FILE_COUNT = 1;
  */
 function normalizeForSearch(value) {
   return String(value || '').trim().toLocaleLowerCase(CASE_INSENSITIVE_LOCALE);
+}
+
+/**
+ * Normalize a title or filename for local cache matching.
+ * @param {string} value - Raw title or file value.
+ * @returns {string}
+ */
+function normalizeForTitleMatch(value) {
+  return normalizeForSearch(value)
+    .replace(BRACKETED_TEXT_PATTERN, ' ')
+    .replace(FILE_EXTENSION_PATTERN, ' ')
+    .replace(WORD_SEPARATOR_PATTERN, ' ')
+    .replace(MULTIPLE_SPACE_PATTERN, ' ')
+    .trim();
+}
+
+/**
+ * Return significant title tokens for local cache matching.
+ * @param {string} value - Raw title or file value.
+ * @returns {Array<string>}
+ */
+function getTitleTokens(value) {
+  return normalizeForTitleMatch(value)
+    .split(' ')
+    .filter((token) => token && !IGNORED_MATCH_TOKENS.has(token));
+}
+
+/**
+ * Count unique token intersections between two token lists.
+ * @param {Array<string>} leftTokens - Left token list.
+ * @param {Array<string>} rightTokens - Right token list.
+ * @returns {number}
+ */
+function countTokenIntersection(leftTokens, rightTokens) {
+  const rightTokenSet = new Set(rightTokens);
+  return Array.from(new Set(leftTokens)).filter((token) => rightTokenSet.has(token)).length;
+}
+
+/**
+ * Score how well a local entry name matches a user query or release title.
+ * @param {string} query - Search query or selected release title.
+ * @param {string} candidateName - Local file or folder name.
+ * @returns {number}
+ */
+function scoreLocalNameMatch(query, candidateName) {
+  const normalizedQuery = normalizeForTitleMatch(query);
+  const normalizedCandidate = normalizeForTitleMatch(candidateName);
+
+  if (!normalizedQuery || !normalizedCandidate) {
+    return EMPTY_MATCH_SCORE;
+  }
+
+  if (normalizedQuery === normalizedCandidate) {
+    return EXACT_MATCH_SCORE;
+  }
+
+  if (
+    normalizedQuery.length >= MINIMUM_QUERY_LENGTH_FOR_SUBSTRING
+    && normalizedCandidate.length >= MINIMUM_QUERY_LENGTH_FOR_SUBSTRING
+    && (normalizedQuery.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedQuery))
+  ) {
+    return SUBSTRING_MATCH_SCORE;
+  }
+
+  const queryTokens = getTitleTokens(normalizedQuery);
+  const candidateTokens = getTitleTokens(normalizedCandidate);
+  const shortestTokenCount = Math.min(queryTokens.length, candidateTokens.length);
+
+  if (shortestTokenCount === 0) {
+    return EMPTY_MATCH_SCORE;
+  }
+
+  const matchingTokens = countTokenIntersection(queryTokens, candidateTokens);
+  const coverage = matchingTokens / shortestTokenCount;
+  const hasEnoughTokens = matchingTokens >= Math.min(MINIMUM_TOKEN_MATCH_COUNT, shortestTokenCount);
+
+  if (!hasEnoughTokens || coverage < MINIMUM_TOKEN_COVERAGE) {
+    return EMPTY_MATCH_SCORE;
+  }
+
+  return TOKEN_MATCH_BASE_SCORE + Math.round(coverage * TOKEN_MATCH_MAX_BONUS);
 }
 
 /**
@@ -231,8 +362,7 @@ function getDownloadTarget(targetPath, globalDownloadsPath) {
  * @returns {Array<{ name: string, path: string, relativePath: string, size: number, fileCount: number, archive: boolean }>}
  */
 function matchesLocal(query, downloadsPath, globalDownloadsPath) {
-  const searchTerm = normalizeForSearch(query);
-  if (!searchTerm || !fs.existsSync(downloadsPath)) {
+  if (!normalizeForTitleMatch(query) || !fs.existsSync(downloadsPath)) {
     return [];
   }
 
@@ -247,8 +377,8 @@ function matchesLocal(query, downloadsPath, globalDownloadsPath) {
   const matches = [];
 
   entries.forEach((entry) => {
-    const entryName = normalizeForSearch(entry.name);
-    if (!entryName.includes(searchTerm)) {
+    const matchScore = scoreLocalNameMatch(query, entry.name);
+    if (matchScore === EMPTY_MATCH_SCORE) {
       return;
     }
 
@@ -264,11 +394,18 @@ function matchesLocal(query, downloadsPath, globalDownloadsPath) {
       relativePath: downloadTarget.relativePath,
       size: downloadTarget.size,
       fileCount: downloadTarget.fileCount,
-      archive: downloadTarget.type === 'archive'
+      archive: downloadTarget.type === 'archive',
+      matchScore
     });
   });
 
-  return matches;
+  return matches
+    .sort((left, right) => right.matchScore - left.matchScore || left.name.localeCompare(right.name))
+    .map((match) => {
+      const output = Object.assign({}, match);
+      delete output.matchScore;
+      return output;
+    });
 }
 
 module.exports = {
@@ -276,5 +413,6 @@ module.exports = {
   isPathInside,
   listDownloadFiles,
   matchesLocal,
+  scoreLocalNameMatch,
   toGlobalRelativePath
 };

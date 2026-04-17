@@ -16,32 +16,71 @@ const torrentClientFactory = require('../services/torrentclient');
 const router = express.Router();
 const MAGNET_PROTOCOL = 'magnet:';
 const HTTP_URL_PATTERN = /^https?:\/\//i;
+const CACHE_TERM_PARAMS = ['dn', 'name', 'title', 'file'];
+
+/**
+ * Add a unique non-empty term to a cache search term list.
+ * @param {Array<string>} terms - Search terms.
+ * @param {*} value - Candidate value.
+ * @returns {void}
+ */
+function addCacheSearchTerm(terms, value) {
+  const term = String(value || '').trim();
+  if (term && !terms.includes(term)) {
+    terms.push(term);
+  }
+}
+
+/**
+ * Return search terms that may identify an already-downloaded local item.
+ * @param {Object} body - Request body.
+ * @param {string} link - Submitted magnet or URL.
+ * @returns {Array<string>}
+ */
+function getCacheSearchTerms(body, link) {
+  const terms = [];
+  addCacheSearchTerm(terms, body.name);
+  addCacheSearchTerm(terms, body.title);
+  addCacheSearchTerm(terms, body.filename);
+
+  try {
+    const parsedUrl = new URL(link);
+    CACHE_TERM_PARAMS.forEach((param) => addCacheSearchTerm(terms, parsedUrl.searchParams.get(param)));
+
+    if (parsedUrl.protocol !== 'magnet:') {
+      addCacheSearchTerm(terms, parsedUrl.pathname.split('/').pop());
+    }
+  } catch (error) {
+    return terms;
+  }
+
+  return terms;
+}
 
 /**
  * Return a cached local download response if the title is already present.
- * @param {string} name - Optional requested name.
+ * @param {Array<string>} terms - Candidate local cache search terms.
  * @param {Object} req - Express request.
  * @returns {Object|null}
  */
-function getCachedDownload(name, req) {
-  if (!name) {
+function getCachedDownload(terms, req) {
+  if (!terms.length) {
     return null;
   }
 
   const config = configStore.getConfig();
   const keyDownloadsPath = downloads.getKeyDownloadsPath(req.apiKey, config);
-  const matches = localFiles.matchesLocal(name, keyDownloadsPath, config.downloadsPath);
-  if (matches.length === 0) {
-    return null;
-  }
+  const matched = terms
+    .map((term) => localFiles.matchesLocal(term, keyDownloadsPath, config.downloadsPath)[0])
+    .find(Boolean);
 
-  return {
+  return matched ? {
     torrent_id: 'local-cached',
-    name: matches[0].name,
+    name: matched.name,
     hash: null,
     cached: true,
-    downloadUrl: downloads.buildDownloadUrl(config, req.apiToken, matches[0].relativePath)
-  };
+    downloadUrl: downloads.buildDownloadUrl(config, req.apiToken, matched.relativePath)
+  } : null;
 }
 
 /**
@@ -69,7 +108,7 @@ async function createTorrentRoute(req, res) {
     return;
   }
 
-  const cached = getCachedDownload(name, req);
+  const cached = getCachedDownload(getCacheSearchTerms(req.body || {}, magnet), req);
   if (cached) {
     responses.sendSuccess(res, 'This title is already downloaded and ready.', cached);
     return;

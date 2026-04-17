@@ -29,6 +29,12 @@ const STATUS_MAP = {
   Error: 'error',
   Paused: 'queued'
 };
+const DUPLICATE_TORRENT_HASH_PATTERN = /Torrent already in session \(([a-fA-F0-9]{40}|[a-fA-F0-9]{64})\)/i;
+const MISSING_TORRENT_PATTERNS = [
+  /KeyError/i,
+  /torrent.*not.*found/i,
+  /not.*in.*session/i
+];
 
 /**
  * Deluge JSON-RPC adapter.
@@ -72,12 +78,27 @@ class DelugeClient extends BaseTorrentClient {
       const method = String(magnet).startsWith('magnet:')
         ? 'core.add_torrent_magnet'
         : 'core.add_torrent_url';
-      const hash = await this.rpcWithoutRetry(method, [
-        magnet,
-        {
-          download_location: savePath
+      let hash = '';
+      try {
+        hash = await this.rpcWithoutRetry(method, [
+          magnet,
+          {
+            download_location: savePath
+          }
+        ]);
+      } catch (error) {
+        const duplicateHash = this.extractDuplicateHash(error);
+        if (!duplicateHash) {
+          throw error;
         }
-      ]);
+
+        const duplicateTorrent = await this.fetchTorrent(duplicateHash);
+        return {
+          hash: duplicateHash,
+          name: duplicateTorrent ? duplicateTorrent.name : this.extractMagnetName(magnet)
+        };
+      }
+
       const torrent = hash ? await this.fetchTorrent(hash) : null;
 
       return {
@@ -115,8 +136,16 @@ class DelugeClient extends BaseTorrentClient {
    * @returns {Promise<Object|null>}
    */
   async fetchTorrent(hash) {
-    const torrent = await this.rpcWithoutRetry('core.get_torrent_status', [hash, TORRENT_FIELDS]);
-    return torrent ? this.normalizeTorrent(hash, torrent) : null;
+    try {
+      const torrent = await this.rpcWithoutRetry('core.get_torrent_status', [hash, TORRENT_FIELDS]);
+      return torrent ? this.normalizeTorrent(hash, torrent) : null;
+    } catch (error) {
+      if (this.isMissingTorrentError(error)) {
+        return null;
+      }
+
+      throw error;
+    }
   }
 
   /**
@@ -141,10 +170,32 @@ class DelugeClient extends BaseTorrentClient {
     }
 
     if (response.data && response.data.error) {
-      throw new Error(response.data.error.message || 'Deluge could not complete the request.');
+      const error = new Error(response.data.error.message || 'Deluge could not complete the request.');
+      error.delugeError = response.data.error;
+      throw error;
     }
 
     return response.data ? response.data.result : null;
+  }
+
+  /**
+   * Extract a duplicate torrent hash from a Deluge error.
+   * @param {Error} error - Deluge RPC error.
+   * @returns {string}
+   */
+  extractDuplicateHash(error) {
+    const match = DUPLICATE_TORRENT_HASH_PATTERN.exec(String(error.message || ''));
+    return match ? match[1].toLowerCase() : '';
+  }
+
+  /**
+   * Determine whether Deluge reported a missing torrent hash.
+   * @param {Error} error - Deluge RPC error.
+   * @returns {boolean}
+   */
+  isMissingTorrentError(error) {
+    const message = String(error.message || '');
+    return MISSING_TORRENT_PATTERNS.some((pattern) => pattern.test(message));
   }
 
   /**
