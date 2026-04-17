@@ -14,6 +14,7 @@ const KEY_PREVIEW_LENGTH = 4;
 const MASK_MINIMUM_LENGTH = 8;
 const HEX_RADIX = 16;
 const SESSION_SECRET_BYTES = 32;
+const MAX_API_KEY_PARSE_DEPTH = 2;
 const ENV_PATH = path.join(process.cwd(), '.env');
 const ROOT_PATH = '/';
 const SUPPORTED_TORRENT_CLIENTS = ['qbittorrent', 'deluge', 'transmission', 'rtorrent'];
@@ -28,11 +29,11 @@ const DEFAULTS = {
   BRIDGE_URL: 'http://your-seedbox-ip:7878',
   PORT: String(DEFAULT_PORT),
   API_KEYS: '[]',
-  UI_PASSWORD_HASH: ''
+  UI_PASSWORD_HASH: '',
+  SESSION_SECRET: ''
 };
 
 let currentConfig = loadConfig();
-let sessionSecret = crypto.randomBytes(SESSION_SECRET_BYTES).toString('hex');
 
 /**
  * Parse an integer from an environment value with a fallback.
@@ -58,17 +59,45 @@ function readRawEnv() {
 }
 
 /**
+ * Try to parse an API key JSON value.
+ * @param {string} value - Raw JSON value.
+ * @param {number} depth - Current recursion depth.
+ * @returns {Array<Object>}
+ */
+function tryParseApiKeys(value, depth) {
+  if (depth > MAX_API_KEY_PARSE_DEPTH) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value || DEFAULTS.API_KEYS);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+
+    if (typeof parsed === 'string') {
+      return tryParseApiKeys(parsed, depth + 1);
+    }
+  } catch (error) {
+    return [];
+  }
+
+  return [];
+}
+
+/**
  * Safely parse the JSON API key array from the environment.
  * @param {string} rawValue - Raw JSON value.
  * @returns {Array<Object>}
  */
 function parseApiKeys(rawValue) {
-  try {
-    const parsed = JSON.parse(rawValue || DEFAULTS.API_KEYS);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    return [];
+  const value = String(rawValue || DEFAULTS.API_KEYS);
+  const parsed = tryParseApiKeys(value, 0);
+  if (parsed.length || value === DEFAULTS.API_KEYS) {
+    return parsed;
   }
+
+  return tryParseApiKeys(value.replace(/\\"/g, '"'), 0);
 }
 
 /**
@@ -99,7 +128,8 @@ function loadConfig() {
     bridgeUrl: normalizeUrl(env.BRIDGE_URL),
     port: parsePort(env.PORT, DEFAULT_PORT),
     apiKeys: parseApiKeys(env.API_KEYS),
-    uiPasswordHash: env.UI_PASSWORD_HASH || ''
+    uiPasswordHash: env.UI_PASSWORD_HASH || '',
+    sessionSecret: env.SESSION_SECRET || ''
   };
 }
 
@@ -121,11 +151,25 @@ function reloadConfig() {
 }
 
 /**
+ * Generate a session signing secret.
+ * @returns {string}
+ */
+function generateSessionSecret() {
+  return crypto.randomBytes(SESSION_SECRET_BYTES).toString('hex');
+}
+
+/**
  * Return the current Express session secret.
  * @returns {string}
  */
 function getSessionSecret() {
-  return sessionSecret;
+  if (!currentConfig.sessionSecret) {
+    writeConfig(Object.assign({}, currentConfig, {
+      sessionSecret: generateSessionSecret()
+    }));
+  }
+
+  return currentConfig.sessionSecret;
 }
 
 /**
@@ -174,6 +218,7 @@ function buildEnvDocument(config) {
     '# Auto-generated - do not edit manually',
     `API_KEYS=${formatEnvValue(apiKeys)}`,
     `UI_PASSWORD_HASH=${formatEnvValue(config.uiPasswordHash)}`,
+    `SESSION_SECRET=${formatEnvValue(config.sessionSecret)}`,
     ''
   ].join('\n');
 }

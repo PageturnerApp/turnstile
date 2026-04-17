@@ -8,86 +8,138 @@ Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
     <base href="%BASE_HREF%">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Turnstile Settings</title>
-    <link rel="stylesheet" href="ui/style.css">
+    <link rel="icon" type="image/png" href="ui/turnstile-logo.png">
+    <link rel="stylesheet" href="ui/style.css?v=20260417-ui2">
   </head>
   <body data-page="settings">
-    <main class="shell">
-      <header class="topbar">
-        <div class="brand">
-          <div class="mark">T</div>
-          <div>
-            <h1>Settings</h1>
-            <div class="muted">Turnstile</div>
+    <div class="app-shell">
+      <nav class="top-nav">
+        <div class="nav-inner">
+          <div class="nav-left">
+            <a class="nav-brand" href="ui">
+              <img src="ui/turnstile-logo.png" alt="">
+              <span>Turnstile</span>
+            </a>
+            <div class="nav-links" id="nav-links">
+              <a href="ui" data-page-link="dashboard">Dashboard</a>
+              <a href="ui/settings" data-page-link="settings">Settings</a>
+              <a href="ui/keys" data-page-link="keys">API Keys</a>
+            </div>
+          </div>
+          <div class="nav-right">
+            <span class="nav-version" id="nav-version">v...</span>
+            <form method="post" action="ui/logout">
+              <button class="btn-ghost btn-sm" type="submit">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
+              </button>
+            </form>
+            <button class="mobile-menu-btn" type="button" data-toggle-menu aria-label="Toggle menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
           </div>
         </div>
-        <nav class="nav">
-          <a href="ui">Dashboard</a>
-          <a href="ui/keys">API Keys</a>
-        </nav>
-      </header>
+      </nav>
 
-      <form id="settings-form" class="grid">
-        <section class="panel span-6 stack">
-          <h2>Prowlarr</h2>
-          <label>URL
-            <input name="prowlarrUrl" type="url" autocomplete="url">
-          </label>
-          <label>API Key
-            <input name="prowlarrApiKey" class="mono" type="password" autocomplete="off">
-          </label>
-          <div class="actions">
-            <button type="button" data-test="prowlarr">Test Connection</button>
-          </div>
+      <main class="main-content">
+        <section id="page-settings" class="page active">
+          <h1 class="page-title">Settings</h1>
+
+          <form id="settings-form" novalidate>
+            <section class="settings-section">
+              <h2 class="section-heading">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Prowlarr
+              </h2>
+              <div class="form-group">
+                <label for="prowlarr-url">URL</label>
+                <input type="url" class="mono-input" id="prowlarr-url" name="prowlarrUrl" placeholder="http://localhost:9696" autocomplete="url">
+              </div>
+              <div class="form-group">
+                <label for="prowlarr-api-key">API Key</label>
+                <input type="password" class="mono-input" id="prowlarr-api-key" name="prowlarrApiKey" placeholder="Prowlarr API key" autocomplete="off">
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary btn-sm" type="button" data-test="prowlarr">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Test connection
+                </button>
+                <span class="test-result" id="test-prowlarr"></span>
+              </div>
+            </section>
+
+            <section class="settings-section">
+              <h2 class="section-heading">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Torrent Client
+              </h2>
+              <div class="form-group">
+                <label for="torrent-client-select">Client</label>
+                <select id="torrent-client-select" name="torrentClient">
+                  <option value="qbittorrent">qBittorrent</option>
+                  <option value="deluge">Deluge</option>
+                  <option value="transmission">Transmission</option>
+                  <option value="rtorrent">rTorrent</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="torrent-client-url">URL</label>
+                <input type="url" class="mono-input" id="torrent-client-url" name="torrentClientUrl" placeholder="http://localhost:8080" autocomplete="url">
+                <small>Include custom ports if needed, e.g. Deluge on 443.</small>
+              </div>
+              <div class="input-row">
+                <div class="form-group">
+                  <label for="torrent-client-user">Username</label>
+                  <input type="text" id="torrent-client-user" name="torrentClientUser" placeholder="Username" autocomplete="username">
+                </div>
+                <div class="form-group">
+                  <label for="torrent-client-pass">Password</label>
+                  <input type="password" id="torrent-client-pass" name="torrentClientPass" placeholder="Password" autocomplete="current-password">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary btn-sm" type="button" data-test="torrent-client">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Test connection
+                </button>
+                <span class="test-result" id="test-torrent-client"></span>
+              </div>
+              <div class="note">Don't see your client? <a href="https://github.com/PageturnerApp/turnstile/issues" target="_blank" rel="noopener">Open an issue on GitHub</a>.</div>
+            </section>
+
+            <section class="settings-section">
+              <h2 class="section-heading">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                Turnstile
+              </h2>
+              <div class="form-group">
+                <label for="bridge-url">Bridge URL</label>
+                <input type="url" class="mono-input" id="bridge-url" name="bridgeUrl" placeholder="http://your-server:7878" autocomplete="url">
+                <small>The URL Pageturner and other apps use to reach this server.</small>
+              </div>
+              <div class="input-row">
+                <div class="form-group">
+                  <label for="downloads-path">Downloads Path</label>
+                  <input type="text" class="mono-input" id="downloads-path" name="downloadsPath" placeholder="/downloads" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label for="port">Port</label>
+                  <input type="number" class="mono-input" id="port" name="port" placeholder="7878" min="1" max="65535">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-primary" type="submit">Save settings</button>
+              </div>
+            </section>
+          </form>
         </section>
+      </main>
 
-        <section class="panel span-6 stack">
-          <h2>Torrent Client</h2>
-          <label>Client type
-            <select name="torrentClient">
-              <option value="qbittorrent">qBittorrent</option>
-              <option value="deluge">Deluge</option>
-              <option value="transmission">Transmission</option>
-              <option value="rtorrent">rTorrent</option>
-            </select>
-          </label>
-          <div class="helper">Don't see your client? Open an issue on GitHub.</div>
-          <label>URL
-            <input name="torrentClientUrl" type="url" autocomplete="url">
-          </label>
-          <div class="helper">Include the port and base path. Deluge uses the Web JSON-RPC URL, for example http://127.0.0.1:13355 or https://host.example:443/deluge.</div>
-          <label>Username
-            <input name="torrentClientUser" autocomplete="username">
-          </label>
-          <label>Password
-            <input name="torrentClientPass" type="password" autocomplete="current-password">
-          </label>
-          <div class="actions">
-            <button type="button" data-test="torrent-client">Test Connection</button>
-          </div>
-        </section>
-
-        <section class="panel stack">
-          <h2>Turnstile</h2>
-          <div class="grid">
-            <label class="span-6">Bridge URL
-              <input name="bridgeUrl" type="url" autocomplete="url">
-            </label>
-            <label class="span-6">Downloads Path
-              <input name="downloadsPath" class="mono" autocomplete="off">
-            </label>
-            <label class="span-4">Port
-              <input name="port" type="number" min="1" max="65535">
-            </label>
-          </div>
-          <div class="actions">
-            <button class="primary" type="submit">Save Settings</button>
-          </div>
-        </section>
-      </form>
-
-      <footer class="footer">Part of the Pageturner project · AGPL v3</footer>
-    </main>
-    <div id="toast" class="toast"></div>
-    <script src="ui/app.js"></script>
+      <footer class="app-footer">
+        <div class="footer-inner">Part of the <a href="https://getpageturner.com">Pageturner</a> project <span class="dot">&middot;</span> AGPL v3</div>
+      </footer>
+    </div>
+    <div class="toast-container" id="toast-container"></div>
+    <script src="ui/app.js?v=20260417-ui2"></script>
   </body>
 </html>

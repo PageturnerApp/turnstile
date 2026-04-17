@@ -8,26 +8,32 @@ Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
     <base href="%BASE_HREF%">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Turnstile Login</title>
-    <link rel="stylesheet" href="ui/style.css">
+    <link rel="icon" type="image/png" href="ui/turnstile-logo.png">
+    <link rel="stylesheet" href="ui/style.css?v=20260417-ui2">
   </head>
-  <body>
-    <main class="auth-wrap">
-      <section class="auth-card stack">
-        <div class="brand">
-          <div class="mark">T</div>
-          <div>
-            <h1>Turnstile</h1>
-            <div class="muted">Sign in</div>
+  <body data-page="login">
+    <main id="page-login" class="page active">
+      <div class="auth-shell">
+        <section class="auth-card">
+          <img src="ui/turnstile-logo.png" alt="Turnstile" class="auth-logo">
+          <h1>Turnstile</h1>
+          <p class="auth-desc">Enter your admin password to continue.</p>
+          <div class="auth-error" id="login-error" role="alert">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <span id="login-error-text"></span>
           </div>
-        </div>
-        <form class="stack" method="post" action="ui/login">
-          <label>Password
-            <input name="password" type="password" autocomplete="current-password" required>
-          </label>
-          <button class="primary" type="submit">Sign In</button>
-        </form>
-        <footer class="footer">Part of the Pageturner project · AGPL v3</footer>
-      </section>
+          <form id="login-form" method="post" action="ui/login" novalidate>
+            <div class="form-group">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="Admin password" required>
+            </div>
+            <button class="btn-primary" type="submit">Log in</button>
+          </form>
+        </section>
+        <div class="auth-footer">Part of the <a href="https://getpageturner.com">Pageturner</a> project <span class="dot">&middot;</span> AGPL v3</div>
+      </div>
     </main>
+    <div class="toast-container" id="toast-container"></div>
+    <script src="ui/app.js?v=20260417-ui2"></script>
   </body>
 </html>

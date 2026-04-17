@@ -65,7 +65,7 @@ const SECURITY_HEADERS = Object.freeze({
   'X-Frame-Options': 'DENY'
 });
 const NO_STORE_API_PREFIXES = ['/api/v1/config', '/api/v1/keys'];
-const UI_STATIC_ASSET_PATHS = ['/ui/app.js', '/ui/style.css'];
+const UI_STATIC_ASSET_PATHS = ['/ui/app.js', '/ui/style.css', '/ui/turnstile-logo.png'];
 const PUBLIC_UI_PATH = path.join(__dirname, 'public', 'ui');
 const SETUP_PAGE = path.join(PUBLIC_UI_PATH, 'setup.html');
 const LOGIN_PAGE = path.join(PUBLIC_UI_PATH, 'login.html');
@@ -437,6 +437,7 @@ async function postSetup(req, res) {
   configStore.setUiPasswordHash(hash);
   clearAuthFailures(req, SETUP_RATE_LIMIT_SCOPE);
   await startAuthenticatedUiSession(req);
+  auth.setUiSessionCookie(req, res);
   res.redirect(externalPath('/ui'));
 }
 
@@ -484,6 +485,7 @@ async function postLogin(req, res) {
 
   clearAuthFailures(req, LOGIN_RATE_LIMIT_SCOPE);
   await startAuthenticatedUiSession(req);
+  auth.setUiSessionCookie(req, res);
   res.redirect(externalPath('/ui'));
 }
 
@@ -494,6 +496,7 @@ async function postLogin(req, res) {
  * @returns {void}
  */
 function postLogout(req, res) {
+  auth.clearUiSessionCookie(req, res);
   req.session.destroy(() => {
     res.redirect(externalPath('/ui/login'));
   });
@@ -591,7 +594,7 @@ async function startServer() {
   });
 }
 
-app.get('/ui/:asset(style.css|app.js)', sendUiAsset);
+app.get('/ui/:asset(style.css|app.js|turnstile-logo.png)', sendUiAsset);
 app.get('/ui/setup', getSetupPage);
 app.post('/ui/setup', createAuthRateLimiter(SETUP_RATE_LIMIT_SCOPE, SETUP_MAX_ATTEMPTS), responses.asyncHandler(postSetup));
 app.get('/ui/login', getLoginPage);

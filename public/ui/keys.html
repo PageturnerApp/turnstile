@@ -8,85 +8,151 @@ Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
     <base href="%BASE_HREF%">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Turnstile API Keys</title>
-    <link rel="stylesheet" href="ui/style.css">
+    <link rel="icon" type="image/png" href="ui/turnstile-logo.png">
+    <link rel="stylesheet" href="ui/style.css?v=20260417-ui2">
   </head>
   <body data-page="keys">
-    <main class="shell">
-      <header class="topbar">
-        <div class="brand">
-          <div class="mark">T</div>
-          <div>
-            <h1>API Keys</h1>
-            <div class="muted">Turnstile</div>
+    <div class="app-shell">
+      <nav class="top-nav">
+        <div class="nav-inner">
+          <div class="nav-left">
+            <a class="nav-brand" href="ui">
+              <img src="ui/turnstile-logo.png" alt="">
+              <span>Turnstile</span>
+            </a>
+            <div class="nav-links" id="nav-links">
+              <a href="ui" data-page-link="dashboard">Dashboard</a>
+              <a href="ui/settings" data-page-link="settings">Settings</a>
+              <a href="ui/keys" data-page-link="keys">API Keys</a>
+            </div>
+          </div>
+          <div class="nav-right">
+            <span class="nav-version" id="nav-version">v...</span>
+            <form method="post" action="ui/logout">
+              <button class="btn-ghost btn-sm" type="submit">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
+              </button>
+            </form>
+            <button class="mobile-menu-btn" type="button" data-toggle-menu aria-label="Toggle menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
           </div>
         </div>
-        <nav class="nav">
-          <a href="ui">Dashboard</a>
-          <a href="ui/settings">Settings</a>
-        </nav>
-      </header>
+      </nav>
 
-      <section class="panel stack">
-        <div class="actions">
-          <button id="add-key-button" class="primary" type="button">Add Key</button>
-        </div>
-        <div id="key-form-panel" class="form-band hidden">
-          <h2 id="key-form-title">Add API Key</h2>
-          <form id="key-form" class="stack">
-            <input name="id" type="hidden">
-            <div class="grid">
-              <label class="span-6">Name
-                <input name="name" required>
-              </label>
-              <label class="span-6">Downloads Path
-                <input name="downloads_path" class="mono">
-              </label>
-              <label class="span-6">Categories
-                <input name="categories" placeholder="3030, 3040">
-                <span id="category-helper" class="helper"></span>
-              </label>
-              <label class="span-6">Indexers
-                <input name="indexers" placeholder="Blank = all">
-              </label>
+      <main class="main-content">
+        <section id="page-apikeys" class="page active">
+          <h1 class="page-title">API Keys</h1>
+
+          <div class="keys-toolbar">
+            <span class="text-muted fs-xs"><span id="key-count">0</span> keys active</span>
+            <button class="btn-primary btn-sm" type="button" id="add-key-button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add key
+            </button>
+          </div>
+
+          <div class="keys-list" id="keys-list"></div>
+
+          <p class="category-ref">
+            <span class="cat-id">3030/3040</span> Audiobooks <span class="sep">&middot;</span>
+            <span class="cat-id">7000/7020</span> Ebooks <span class="sep">&middot;</span>
+            <span class="cat-id">2000</span> Movies <span class="sep">&middot;</span>
+            <span class="cat-id">5000</span> TV
+          </p>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <div class="footer-inner">Part of the <a href="https://getpageturner.com">Pageturner</a> project <span class="dot">&middot;</span> AGPL v3</div>
+      </footer>
+    </div>
+
+    <div class="modal-overlay" id="modal-add-key">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="key-form-title">
+        <form id="key-form" novalidate>
+          <input type="hidden" name="id" id="key-id">
+          <div class="modal-header">
+            <h2 id="key-form-title">New API key</h2>
+            <button class="btn-icon" type="button" data-close-modal="modal-add-key" aria-label="Close">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="key-name">Name</label>
+              <input type="text" id="key-name" name="name" placeholder="e.g. iPhone, Living Room iPad" required>
             </div>
-            <div class="actions">
-              <button class="primary" type="submit">Save Key</button>
-              <button id="cancel-key-button" type="button">Cancel</button>
+            <div class="form-group">
+              <label for="key-categories">Categories</label>
+              <input type="text" class="mono-input" id="key-categories" name="categories" placeholder="3030, 3040">
+              <small>Comma-separated Newznab category IDs.</small>
             </div>
-          </form>
-        </div>
-        <div class="table-wrap">
-          <table id="keys-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Key</th>
-                <th>Categories</th>
-                <th>Indexers</th>
-                <th>Downloads Path</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
+            <div class="form-group">
+              <label for="key-indexers">Indexers</label>
+              <input type="text" id="key-indexers" name="indexers" placeholder="Leave blank for all">
+              <small>Comma-separated. Blank = all Prowlarr indexers.</small>
+            </div>
+            <div class="form-group">
+              <label for="key-downloads-path">Downloads path</label>
+              <input type="text" class="mono-input" id="key-downloads-path" name="downloads_path" placeholder="/downloads">
+              <small>Defaults to global path.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" type="button" data-close-modal="modal-add-key">Cancel</button>
+            <button class="btn-primary" type="submit" id="save-key-button">Create key</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
-      <footer class="footer">Part of the Pageturner project · AGPL v3</footer>
-    </main>
-
-    <div id="key-modal" class="modal-backdrop">
-      <div class="modal stack">
-        <h2>Save this key now — it will not be shown again.</h2>
-        <div id="new-key-value" class="code-line mono"></div>
-        <div class="actions">
-          <button id="copy-new-key" class="primary" type="button">Copy Key</button>
-          <button data-close-modal type="button">Done</button>
+    <div class="modal-overlay" id="modal-key-reveal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="key-reveal-title">
+        <div class="modal-header">
+          <h2 id="key-reveal-title">Key created</h2>
+          <button class="btn-icon" type="button" data-close-modal="modal-key-reveal" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="fs-xs text-muted">Your API key for <strong id="reveal-key-name">this device</strong>:</p>
+          <div class="key-reveal-box" id="reveal-key-value"></div>
+          <button class="btn-secondary btn-sm key-reveal-copy" type="button" id="copy-new-key">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy to clipboard
+          </button>
+          <div class="key-warning">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>This key won't be shown again. Copy it now and paste it into Pageturner's self-hosted provider settings.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary" type="button" data-close-modal="modal-key-reveal">Done</button>
         </div>
       </div>
     </div>
-    <div id="toast" class="toast"></div>
-    <script src="ui/app.js"></script>
+
+    <div class="modal-overlay" id="modal-confirm-delete">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-key-title">
+        <div class="modal-header">
+          <h2 id="delete-key-title">Delete API key</h2>
+          <button class="btn-icon" type="button" data-close-modal="modal-confirm-delete" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="fs-xs text-muted">Any device using this key will lose access immediately. This can't be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" type="button" data-close-modal="modal-confirm-delete">Cancel</button>
+          <button class="btn-danger" type="button" id="confirm-delete-key">Delete key</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+    <script src="ui/app.js?v=20260417-ui2"></script>
   </body>
 </html>

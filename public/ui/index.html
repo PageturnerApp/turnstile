@@ -8,94 +8,106 @@ Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
     <base href="%BASE_HREF%">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Turnstile</title>
-    <link rel="stylesheet" href="ui/style.css">
+    <link rel="icon" type="image/png" href="ui/turnstile-logo.png">
+    <link rel="stylesheet" href="ui/style.css?v=20260417-ui2">
   </head>
   <body data-page="dashboard">
-    <main class="shell">
-      <header class="topbar">
-        <div class="brand">
-          <div class="mark">T</div>
-          <div>
-            <h1>Turnstile</h1>
-            <div class="muted">Download provider bridge</div>
+    <div class="app-shell">
+      <nav class="top-nav">
+        <div class="nav-inner">
+          <div class="nav-left">
+            <a class="nav-brand" href="ui">
+              <img src="ui/turnstile-logo.png" alt="">
+              <span>Turnstile</span>
+            </a>
+            <div class="nav-links" id="nav-links">
+              <a href="ui" data-page-link="dashboard">Dashboard</a>
+              <a href="ui/settings" data-page-link="settings">Settings</a>
+              <a href="ui/keys" data-page-link="keys">API Keys</a>
+            </div>
+          </div>
+          <div class="nav-right">
+            <span class="nav-version" id="nav-version">v...</span>
+            <form method="post" action="ui/logout">
+              <button class="btn-ghost btn-sm" type="submit">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
+              </button>
+            </form>
+            <button class="mobile-menu-btn" type="button" data-toggle-menu aria-label="Toggle menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
           </div>
         </div>
-        <nav class="nav">
-          <a href="ui/settings">Settings</a>
-          <a href="ui/keys">API Keys</a>
-          <form method="post" action="ui/logout"><button type="submit">Sign Out</button></form>
-        </nav>
-      </header>
+      </nav>
 
-      <section class="grid">
-        <article class="panel span-4 stat">
-          <div>
-            <span class="muted">Version</span>
-            <strong id="version">...</strong>
-          </div>
-          <span class="dot ok"></span>
-        </article>
-        <article class="panel span-4 stat">
-          <div>
-            <span class="muted">Prowlarr</span>
-            <strong id="prowlarr-url" class="mono">...</strong>
-          </div>
-          <span id="prowlarr-dot" class="dot"></span>
-        </article>
-        <article class="panel span-4 stat">
-          <div>
-            <span class="muted">Torrent Client</span>
-            <strong id="torrent-client">...</strong>
-          </div>
-          <span id="torrent-dot" class="dot"></span>
-        </article>
+      <main class="main-content">
+        <section id="page-dashboard" class="page active">
+          <h1 class="page-title">Dashboard</h1>
 
-        <article class="panel span-6">
-          <h2>Paths</h2>
-          <div class="stack">
-            <div>
-              <div class="muted">Global downloads path</div>
-              <div id="downloads-path" class="mono code-line">...</div>
+          <div class="health-summary">
+            <span class="status-dot idle" id="health-dot"></span>
+            <span id="health-summary-text">Checking connections...</span>
+          </div>
+
+          <div class="status-list">
+            <div class="status-row">
+              <span class="s-label">Turnstile</span>
+              <span class="s-value"><span class="status-dot online"></span> Running</span>
             </div>
-            <div>
-              <div class="muted">Bridge URL</div>
-              <div id="bridge-url" class="mono code-line">...</div>
+            <div class="status-row">
+              <span class="s-label">Prowlarr</span>
+              <span class="s-value"><span class="status-dot idle" id="prowlarr-dot"></span> <a href="#" id="prowlarr-url" target="_blank" rel="noopener">Not configured</a></span>
+            </div>
+            <div class="status-row">
+              <span class="s-label">Torrent client</span>
+              <span class="s-value"><span class="status-dot idle" id="torrent-dot"></span> <span id="torrent-client">Not configured</span> <span class="middot">&middot;</span> <a href="#" id="torrent-url" target="_blank" rel="noopener">Not configured</a></span>
+            </div>
+            <div class="status-row">
+              <span class="s-label">Downloads path</span>
+              <span class="s-value mono" id="downloads-path">...</span>
+            </div>
+            <div class="status-row">
+              <span class="s-label">API keys</span>
+              <span class="s-value"><span class="text-accent fw-700" id="key-count">0</span> <span class="text-muted fw-400">active</span></span>
             </div>
           </div>
-        </article>
 
-        <article class="panel span-6">
-          <h2>Access</h2>
-          <div class="stack">
-            <div class="stat">
-              <div>
-                <span class="muted">Active API keys</span>
-                <strong id="key-count">...</strong>
+          <div class="collapsible" id="connection-guide">
+            <button class="collapsible-trigger" type="button" data-toggle-collapsible="connection-guide">
+              Connect Pageturner to this instance
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="collapsible-body"><div>
+              <div class="collapsible-inner">
+                <div class="step">
+                  <div class="step-num">1</div>
+                  <div class="step-text">Copy your bridge URL: <code id="bridge-url-inline">Not configured</code></div>
+                </div>
+                <div class="step">
+                  <div class="step-num">2</div>
+                  <div class="step-text">Create an API key in <a href="ui/keys">API Keys</a> and copy it.</div>
+                </div>
+                <div class="step">
+                  <div class="step-num">3</div>
+                  <div class="step-text">In Pageturner, go to <strong>Settings &rarr; Providers &rarr; Self-hosted</strong>.</div>
+                </div>
+                <div class="step">
+                  <div class="step-num">4</div>
+                  <div class="step-text">Paste both values and tap <strong>Test Connection</strong>.</div>
+                </div>
+                <p class="hint">Keep your bridge URL and API key private - they grant direct access to your downloads.</p>
               </div>
-              <a class="button primary" href="ui/keys">Manage Keys</a>
-            </div>
-            <div>
-              <div class="muted">Torrent client URL</div>
-              <div id="torrent-url" class="mono code-line">...</div>
-            </div>
+            </div></div>
           </div>
-        </article>
+        </section>
+      </main>
 
-        <article class="panel">
-          <details>
-            <summary>Pageturner connection instructions</summary>
-            <div class="instructions">
-              <div class="code-line">Sources → Add Download Provider → Self-Hosted</div>
-              <div class="code-line">Bridge URL: <span id="bridge-url-inline">Use the Bridge URL shown above</span></div>
-              <div class="code-line">API Key: create one on the API Keys page</div>
-            </div>
-          </details>
-        </article>
-      </section>
-
-      <footer class="footer">Part of the Pageturner project · AGPL v3</footer>
-    </main>
-    <div id="toast" class="toast"></div>
-    <script src="ui/app.js"></script>
+      <footer class="app-footer">
+        <div class="footer-inner">Part of the <a href="https://getpageturner.com">Pageturner</a> project <span class="dot">&middot;</span> AGPL v3</div>
+      </footer>
+    </div>
+    <div class="toast-container" id="toast-container"></div>
+    <script src="ui/app.js?v=20260417-ui2"></script>
   </body>
 </html>

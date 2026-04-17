@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/turnstile-logo.png" alt="Turnstile logo" width="180">
+  <img src="public/ui/turnstile-logo.png" alt="Turnstile logo" width="180">
 </p>
 
 <div align="center">
@@ -257,6 +257,7 @@ node index.js
 | `PORT` | Turnstile HTTP port. | `7878` | `12345` |
 | `API_KEYS` | JSON-stringified API key array managed by the UI. | `[]` | `[]` |
 | `UI_PASSWORD_HASH` | Bcrypt hash created by first-run setup. | empty | `$2b$12$...` |
+| `SESSION_SECRET` | Auto-generated session signing secret that keeps UI logins valid across restarts. | empty | `64-character hex string` |
 
 ## Common Prowlarr category IDs
 
@@ -361,7 +362,7 @@ Turnstile never calls torrent clients from routes directly. Routes use `services
 
 - Complete first-run setup immediately after starting Turnstile. Until `UI_PASSWORD_HASH` is set, anyone who can reach `/ui/setup` can create the UI password.
 - Put public installs behind HTTPS and set `BRIDGE_URL` to the HTTPS URL clients will use.
-- The UI uses bcrypt password hashing, HTTP-only session cookies, session regeneration after login, same-origin checks for UI mutations, and in-memory rate limiting for login/setup attempts.
+- The UI uses bcrypt password hashing, HTTP-only signed session cookies, session regeneration after login, same-origin checks for UI mutations, and in-memory rate limiting for login/setup attempts.
 - API keys are bearer secrets. Query-string tokens are supported for TorBox-compatible clients, but reverse proxies and access logs may record URLs, so keep logs private and rotate exposed keys.
 - Generated download links are authenticated but should still be treated as private.
 - `servedl` resolves files under the global `DOWNLOADS_PATH` root and rejects traversal outside that root.
@@ -381,6 +382,7 @@ State is file-backed and stateless at runtime:
 - No database
 - API keys stored as a JSON-stringified array in `API_KEYS`
 - UI password stored as a bcrypt hash in `UI_PASSWORD_HASH`
+- UI session signing secret stored in `SESSION_SECRET`
 - Settings changes rewrite `.env` and reload in memory
 
 ## Release checklist
