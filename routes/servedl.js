@@ -11,6 +11,7 @@ const configStore = require('../config');
 const responses = require('../utils/responses');
 const downloads = require('../utils/downloads');
 const localFiles = require('../services/localfiles');
+const zipStream = require('../services/zipstream');
 
 const router = express.Router();
 
@@ -29,12 +30,12 @@ function downloadFile(res, filePath) {
 }
 
 /**
- * Serve a direct download file from the configured downloads root.
+ * Serve a direct download file or zip archive from the configured downloads root.
  * @param {import('express').Request} req - Express request.
  * @param {import('express').Response} res - Express response.
- * @returns {void}
+ * @returns {Promise<void>}
  */
-function serveDownloadRoute(req, res) {
+async function serveDownloadRoute(req, res) {
   const file = String(req.query.file || '').trim();
   if (!file) {
     responses.sendError(res, responses.HTTP_BAD_REQUEST, 'Please provide a file path.');
@@ -50,20 +51,25 @@ function serveDownloadRoute(req, res) {
     return;
   }
 
-  const largestFile = localFiles.findLargestFile(candidatePath);
-  if (!largestFile) {
+  const downloadTarget = localFiles.getDownloadTarget(candidatePath, config.downloadsPath);
+  if (!downloadTarget) {
     responses.sendError(res, responses.HTTP_NOT_FOUND, 'That file could not be found.');
     return;
   }
 
-  if (!localFiles.isPathInside(largestFile.path, config.downloadsPath)) {
+  if (!localFiles.isPathInside(downloadTarget.path, config.downloadsPath)) {
     responses.sendError(res, responses.HTTP_FORBIDDEN, 'That file path is not allowed.');
     return;
   }
 
-  downloadFile(res, largestFile.path);
+  if (downloadTarget.type === 'file') {
+    downloadFile(res, downloadTarget.path);
+    return;
+  }
+
+  await zipStream.streamZip(res, downloadTarget.files, path.dirname(downloadTarget.path), downloadTarget.path);
 }
 
-router.get('/', auth.requireApiKey, serveDownloadRoute);
+router.get('/', auth.requireApiKey, responses.asyncHandler(serveDownloadRoute));
 
 module.exports = router;

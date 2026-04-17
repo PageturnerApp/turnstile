@@ -21,7 +21,7 @@ Part of the [Pageturner](https://getpageturner.com) project · AGPL v3
 
 ## What is Turnstile?
 
-Turnstile lets Pageturner, and any other app that speaks its open API, use your private trackers and public indexers as download sources through your own seedbox. It wraps Prowlarr and your torrent client in a clean authenticated bridge that feels like a normal download provider to the apps you connect.
+Turnstile lets Pageturner, and any other app that speaks its open API, use your private trackers and public indexers as download sources through your own seedbox. It wraps Prowlarr and your torrent client in a clean authenticated bridge that feels like a normal download provider to the apps you connect. Single-file downloads are served directly, while multi-file folders such as MP3 audiobooks are streamed as one `.zip` archive.
 
 ## Supported torrent clients
 
@@ -328,6 +328,8 @@ curl "http://localhost:7878/api/v1/torrents/requestdl?token=API_KEY&torrent_id=T
 curl -OJ "http://localhost:7878/api/v1/torrents/servedl?token=API_KEY&file=relative%2Fpath%2Ffile.epub"
 ```
 
+`file` can point to a file or a folder path relative to the global `DOWNLOADS_PATH`.
+
 ### UI config
 
 Requires an authenticated UI session.
@@ -354,9 +356,23 @@ curl -X PUT -b cookie.txt "http://localhost:7878/api/v1/keys/KEY_ID" \
 curl -X DELETE -b cookie.txt "http://localhost:7878/api/v1/keys/KEY_ID"
 ```
 
+## Download behavior
+
+Turnstile always gives clients one download URL, even when the finished torrent contains multiple files:
+
+- If the target resolves to a single file, Turnstile serves that file directly with its original filename.
+- If the target resolves to a folder containing exactly one file, Turnstile serves the contained file directly.
+- If the target resolves to a folder containing multiple files, Turnstile streams that folder as a `.zip` archive.
+- ZIP archives are generated on demand and streamed to the client. Turnstile does not create temporary archive files on disk.
+- Folder archives preserve the top-level folder name, which keeps multi-part audiobooks and similar downloads grouped after extraction.
+
+This means `.m4b`, `.epub`, `.pdf`, and other single-file downloads stay direct, while multi-file MP3 audiobooks download as one archive.
+
 ## Architecture notes
 
 Turnstile never calls torrent clients from routes directly. Routes use `services/torrentclient/index.js`, which returns the configured adapter. Each adapter implements `addMagnet`, `getTorrent`, `getRecentlyAdded`, and `authenticate`, and maps native client state into Turnstile's normalized torrent shape.
+
+Local cache lookup and direct downloads are handled separately from torrent-client adapters. `services/localfiles.js` resolves local download targets under `DOWNLOADS_PATH`, and `services/zipstream.js` streams multi-file folders as ZIP archives without adding external archive dependencies.
 
 ## Security notes
 
@@ -365,7 +381,8 @@ Turnstile never calls torrent clients from routes directly. Routes use `services
 - The UI uses bcrypt password hashing, HTTP-only signed session cookies, session regeneration after login, same-origin checks for UI mutations, and in-memory rate limiting for login/setup attempts.
 - API keys are bearer secrets. Query-string tokens are supported for TorBox-compatible clients, but reverse proxies and access logs may record URLs, so keep logs private and rotate exposed keys.
 - Generated download links are authenticated but should still be treated as private.
-- `servedl` resolves files under the global `DOWNLOADS_PATH` root and rejects traversal outside that root.
+- `servedl` resolves files and zip archive contents under the global `DOWNLOADS_PATH` root and rejects traversal outside that root.
+- Turnstile is intended for personal self-hosted use. Do not resell API keys, public download links, or access to a seedbox unless your infrastructure provider and every connected indexer/tracker explicitly allow that use.
 
 ## Seeding, ratio, and tracker rules
 

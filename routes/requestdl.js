@@ -47,14 +47,13 @@ async function requestDownloadRoute(req, res) {
     return;
   }
 
-  const largestFile = localFiles.findLargestFile(torrent.savePath);
-  if (!largestFile) {
+  const downloadTarget = localFiles.getDownloadTarget(torrent.savePath, config.downloadsPath);
+  if (!downloadTarget) {
     responses.sendError(res, responses.HTTP_NOT_FOUND, 'No downloadable file was found for this torrent yet.');
     return;
   }
 
-  const relativePath = localFiles.toGlobalRelativePath(largestFile.path, config.downloadsPath);
-  const url = downloads.buildDownloadUrl(config, req.apiToken, relativePath);
+  const url = downloads.buildDownloadUrl(config, req.apiToken, downloadTarget.relativePath);
 
   if (downloads.parseBoolean(req.query.redirect)) {
     res.redirect(url);

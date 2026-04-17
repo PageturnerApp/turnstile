@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CASE_INSENSITIVE_LOCALE = 'en';
+const SINGLE_FILE_COUNT = 1;
 
 /**
  * Convert a search value into a case-insensitive match token.
@@ -37,65 +38,146 @@ function isPathInside(candidatePath, rootPath) {
     return true;
   }
 
-  const realRoot = fs.existsSync(resolvedRoot) ? fs.realpathSync(resolvedRoot) : resolvedRoot;
-  const realCandidate = fs.realpathSync(resolvedCandidate);
-  const realRelative = path.relative(realRoot, realCandidate);
+  try {
+    const realRoot = fs.existsSync(resolvedRoot) ? fs.realpathSync(resolvedRoot) : resolvedRoot;
+    const realCandidate = fs.realpathSync(resolvedCandidate);
+    const realRelative = path.relative(realRoot, realCandidate);
 
-  return !realRelative.startsWith('..') && !path.isAbsolute(realRelative);
+    return !realRelative.startsWith('..') && !path.isAbsolute(realRelative);
+  } catch (error) {
+    return false;
+  }
 }
 
 /**
- * Find the largest regular file within a file or directory path.
- * @param {string} targetPath - File or directory to inspect.
- * @returns {{ path: string, size: number }|null}
+ * Safely read lstat metadata for a path.
+ * @param {string} targetPath - Path to inspect.
+ * @returns {fs.Stats|null}
  */
-function findLargestFile(targetPath) {
-  if (!fs.existsSync(targetPath)) {
+function safeLstat(targetPath) {
+  try {
+    return fs.lstatSync(targetPath);
+  } catch (error) {
     return null;
   }
+}
 
-  const lstat = fs.lstatSync(targetPath);
-  if (lstat.isSymbolicLink()) {
-    const stat = fs.statSync(targetPath);
-    return stat.isFile()
-      ? {
-        path: targetPath,
-        size: stat.size
-      }
-      : null;
+/**
+ * Safely read stat metadata for a path.
+ * @param {string} targetPath - Path to inspect.
+ * @returns {fs.Stats|null}
+ */
+function safeStat(targetPath) {
+  try {
+    return fs.statSync(targetPath);
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Safely read directory entries.
+ * @param {string} targetPath - Directory to inspect.
+ * @returns {Array<fs.Dirent>}
+ */
+function safeReadDir(targetPath) {
+  try {
+    return fs.readdirSync(targetPath, { withFileTypes: true });
+  } catch (error) {
+    return [];
+  }
+}
+
+/**
+ * Add one file to a download file list when it stays inside the downloads root.
+ * @param {Array<{ path: string, size: number, mtime: Date }>} files - Collected file list.
+ * @param {string} filePath - Candidate file path.
+ * @param {string} globalDownloadsPath - Global downloads root.
+ * @returns {void}
+ */
+function addDownloadFile(files, filePath, globalDownloadsPath) {
+  if (!isPathInside(filePath, globalDownloadsPath)) {
+    return;
   }
 
-  const stat = fs.statSync(targetPath);
+  const stat = safeStat(filePath);
+  if (!stat) {
+    return;
+  }
+
+  if (!stat.isFile()) {
+    return;
+  }
+
+  files.push({
+    path: filePath,
+    size: stat.size,
+    mtime: stat.mtime
+  });
+}
+
+/**
+ * Recursively collect regular files under a path without following directory symlinks.
+ * @param {string} targetPath - File or directory to inspect.
+ * @param {string} globalDownloadsPath - Global downloads root.
+ * @param {Array<{ path: string, size: number, mtime: Date }>} files - Collected file list.
+ * @returns {void}
+ */
+function collectDownloadFiles(targetPath, globalDownloadsPath, files) {
+  if (!fs.existsSync(targetPath) || !isPathInside(targetPath, globalDownloadsPath)) {
+    return;
+  }
+
+  const lstat = safeLstat(targetPath);
+  if (!lstat) {
+    return;
+  }
+
+  if (lstat.isSymbolicLink()) {
+    addDownloadFile(files, targetPath, globalDownloadsPath);
+    return;
+  }
+
+  const stat = safeStat(targetPath);
+  if (!stat) {
+    return;
+  }
+
   if (stat.isFile()) {
-    return {
-      path: targetPath,
-      size: stat.size
-    };
+    addDownloadFile(files, targetPath, globalDownloadsPath);
+    return;
   }
 
   if (!stat.isDirectory()) {
-    return null;
+    return;
   }
 
-  let largest = null;
-  const entries = fs.readdirSync(targetPath, { withFileTypes: true });
+  safeReadDir(targetPath)
+    .sort((left, right) => left.name.localeCompare(right.name))
+    .forEach((entry) => {
+      collectDownloadFiles(path.join(targetPath, entry.name), globalDownloadsPath, files);
+    });
+}
 
-  entries.forEach((entry) => {
-    const entryPath = path.join(targetPath, entry.name);
-    let candidate = null;
+/**
+ * Sum file sizes in bytes.
+ * @param {Array<{ size: number }>} files - Download files.
+ * @returns {number}
+ */
+function getTotalFileSize(files) {
+  return files.reduce((total, file) => total + file.size, 0);
+}
 
-    try {
-      candidate = findLargestFile(entryPath);
-    } catch (error) {
-      candidate = null;
-    }
-
-    if (candidate && (!largest || candidate.size > largest.size)) {
-      largest = candidate;
-    }
-  });
-
-  return largest;
+/**
+ * List downloadable regular files beneath a file or directory.
+ * @param {string} targetPath - File or directory to inspect.
+ * @param {string} globalDownloadsPath - Global downloads root.
+ * @returns {Array<{ path: string, size: number, mtime: Date }>}
+ */
+function listDownloadFiles(targetPath, globalDownloadsPath) {
+  const files = [];
+  collectDownloadFiles(path.resolve(targetPath), path.resolve(globalDownloadsPath), files);
+  return files;
 }
 
 /**
@@ -109,11 +191,44 @@ function toGlobalRelativePath(filePath, globalDownloadsPath) {
 }
 
 /**
+ * Resolve whether a download target should be served as one file or a zipped folder.
+ * @param {string} targetPath - File or directory to inspect.
+ * @param {string} globalDownloadsPath - Global downloads root.
+ * @returns {{ type: string, path: string, relativePath: string, size: number, fileCount: number, files: Array<Object> }|null}
+ */
+function getDownloadTarget(targetPath, globalDownloadsPath) {
+  const files = listDownloadFiles(targetPath, globalDownloadsPath);
+  if (files.length === 0) {
+    return null;
+  }
+
+  if (files.length === SINGLE_FILE_COUNT) {
+    return {
+      type: 'file',
+      path: files[0].path,
+      relativePath: toGlobalRelativePath(files[0].path, globalDownloadsPath),
+      size: files[0].size,
+      fileCount: files.length,
+      files
+    };
+  }
+
+  return {
+    type: 'archive',
+    path: path.resolve(targetPath),
+    relativePath: toGlobalRelativePath(targetPath, globalDownloadsPath),
+    size: getTotalFileSize(files),
+    fileCount: files.length,
+    files
+  };
+}
+
+/**
  * Fuzzy-match already downloaded files or directories by top-level entry name.
  * @param {string} query - Search query.
  * @param {string} downloadsPath - API-key-specific downloads path.
  * @param {string} globalDownloadsPath - Global downloads root.
- * @returns {Array<{ name: string, path: string, relativePath: string, size: number }>}
+ * @returns {Array<{ name: string, path: string, relativePath: string, size: number, fileCount: number, archive: boolean }>}
  */
 function matchesLocal(query, downloadsPath, globalDownloadsPath) {
   const searchTerm = normalizeForSearch(query);
@@ -128,7 +243,7 @@ function matchesLocal(query, downloadsPath, globalDownloadsPath) {
     return [];
   }
 
-  const entries = fs.readdirSync(root, { withFileTypes: true });
+  const entries = safeReadDir(root);
   const matches = [];
 
   entries.forEach((entry) => {
@@ -138,16 +253,18 @@ function matchesLocal(query, downloadsPath, globalDownloadsPath) {
     }
 
     const entryPath = path.join(root, entry.name);
-    const largestFile = findLargestFile(entryPath);
-    if (!largestFile || !isPathInside(largestFile.path, globalRoot)) {
+    const downloadTarget = getDownloadTarget(entryPath, globalRoot);
+    if (!downloadTarget) {
       return;
     }
 
     matches.push({
       name: entry.name,
-      path: largestFile.path,
-      relativePath: toGlobalRelativePath(largestFile.path, globalRoot),
-      size: largestFile.size
+      path: downloadTarget.path,
+      relativePath: downloadTarget.relativePath,
+      size: downloadTarget.size,
+      fileCount: downloadTarget.fileCount,
+      archive: downloadTarget.type === 'archive'
     });
   });
 
@@ -155,8 +272,9 @@ function matchesLocal(query, downloadsPath, globalDownloadsPath) {
 }
 
 module.exports = {
-  findLargestFile,
+  getDownloadTarget,
   isPathInside,
+  listDownloadFiles,
   matchesLocal,
   toGlobalRelativePath
 };
