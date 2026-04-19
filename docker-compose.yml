@@ -4,10 +4,12 @@
 
 services:
   turnstile:
-    build: .
+    image: ghcr.io/pageturnerapp/turnstile:latest
     ports:
       - "7878:7878"
     volumes:
       - ./.env:/app/.env
+      # Change the left side to your host downloads folder.
+      # Keep DOWNLOADS_PATH=/downloads in .env for Docker installs.
       - /home/user/downloads:/downloads
     restart: unless-stopped

@@ -564,13 +564,135 @@ select {
   gap: 8px;
 }
 
+.version-menu {
+  position: relative;
+}
+
 .nav-version {
   padding: 3px 8px;
   border: 1px solid var(--border);
   border-radius: 4px;
+  background: transparent;
   color: var(--muted);
+  cursor: default;
   font-family: var(--mono);
   font-size: 0.7rem;
+}
+
+.nav-version:hover,
+.version-menu:focus-within .nav-version {
+  border-color: var(--border-light);
+  color: var(--secondary);
+}
+
+.nav-version.update-available {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: var(--error-dim);
+  color: var(--error);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.14);
+}
+
+.nav-version.update-unavailable {
+  border-color: rgba(245, 158, 11, 0.35);
+  color: var(--warning);
+}
+
+.version-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 30;
+  width: min(360px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+  visibility: hidden;
+}
+
+.version-menu:hover .version-popover,
+.version-menu:focus-within .version-popover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+.version-popover::before {
+  position: absolute;
+  top: -10px;
+  right: 0;
+  left: 0;
+  height: 10px;
+  content: "";
+}
+
+.version-popover-title {
+  color: var(--primary);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.version-popover-detail {
+  margin-top: 4px;
+  color: var(--secondary);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+}
+
+.version-release-link {
+  display: inline-flex;
+  margin-top: 10px;
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.version-release-link.hidden {
+  display: none;
+}
+
+.version-commands {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.version-commands.hidden {
+  display: none;
+}
+
+.version-commands span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.version-commands code {
+  display: block;
+  max-height: 132px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--secondary);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.version-commands p {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.68rem;
 }
 
 .mobile-menu-btn {

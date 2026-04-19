@@ -16,6 +16,8 @@ const HEX_RADIX = 16;
 const SESSION_SECRET_BYTES = 32;
 const MAX_API_KEY_PARSE_DEPTH = 2;
 const ENV_PATH = path.join(process.cwd(), '.env');
+const ENV_DOLLAR_PATTERN = /\$/;
+const ENV_QUOTED_VALUE_PATTERN = /[\s#"'\\]/;
 const ROOT_PATH = '/';
 const SUPPORTED_TORRENT_CLIENTS = ['qbittorrent', 'deluge', 'transmission', 'rtorrent'];
 const DEFAULTS = {
@@ -179,7 +181,12 @@ function getSessionSecret() {
  */
 function formatEnvValue(value) {
   const stringValue = String(value || '');
-  if (/[\s#"'\\]/.test(stringValue)) {
+
+  if (ENV_DOLLAR_PATTERN.test(stringValue)) {
+    return `'${stringValue}'`;
+  }
+
+  if (ENV_QUOTED_VALUE_PATTERN.test(stringValue)) {
     return JSON.stringify(stringValue);
   }
 

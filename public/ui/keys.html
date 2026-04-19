@@ -9,7 +9,7 @@ Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Turnstile API Keys</title>
     <link rel="icon" type="image/png" href="ui/turnstile-logo.png">
-    <link rel="stylesheet" href="ui/style.css?v=20260417-ui2">
+    <link rel="stylesheet" href="ui/style.css?v=20260419-version-hover">
   </head>
   <body data-page="keys">
     <div class="app-shell">
@@ -27,7 +27,21 @@ Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
             </div>
           </div>
           <div class="nav-right">
-            <span class="nav-version" id="nav-version">v...</span>
+            <div class="version-menu" id="version-menu">
+              <button class="nav-version" id="nav-version" type="button">v...</button>
+              <div class="version-popover" id="version-popover">
+                <p class="version-popover-title" id="version-title">Checking for updates...</p>
+                <p class="version-popover-detail" id="version-detail">Current version v...</p>
+                <a class="version-release-link hidden" id="version-release-link" href="#" target="_blank" rel="noopener">Release notes</a>
+                <div class="version-commands hidden" id="version-commands">
+                  <span>Bare Node</span>
+                  <code id="version-node-command"></code>
+                  <span>Docker</span>
+                  <code id="version-docker-command"></code>
+                  <p id="version-docker-image"></p>
+                </div>
+              </div>
+            </div>
             <form method="post" action="ui/logout">
               <button class="btn-ghost btn-sm" type="submit">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -153,6 +167,6 @@ Licensed under AGPL v3 - https://www.gnu.org/licenses/agpl-3.0.html -->
     </div>
 
     <div class="toast-container" id="toast-container"></div>
-    <script src="ui/app.js?v=20260417-ui2"></script>
+    <script src="ui/app.js?v=20260419-version-hover"></script>
   </body>
 </html>

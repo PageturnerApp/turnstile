@@ -64,7 +64,7 @@ const SECURITY_HEADERS = Object.freeze({
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY'
 });
-const NO_STORE_API_PREFIXES = ['/api/v1/config', '/api/v1/keys'];
+const NO_STORE_API_PREFIXES = ['/api/v1/config', '/api/v1/keys', '/api/v1/update'];
 const UI_STATIC_ASSET_PATHS = ['/ui/app.js', '/ui/style.css', '/ui/turnstile-logo.png'];
 const PUBLIC_UI_PATH = path.join(__dirname, 'public', 'ui');
 const SETUP_PAGE = path.join(PUBLIC_UI_PATH, 'setup.html');
@@ -105,6 +105,7 @@ app.use('/api/v1/torrents/servedl', require('./routes/servedl'));
 app.use('/api/v1/health', require('./routes/health'));
 app.use('/api/v1/config', require('./routes/config'));
 app.use('/api/v1/keys', require('./routes/keys'));
+app.use('/api/v1/update', require('./routes/update'));
 
 /**
  * Apply browser security headers to every response.

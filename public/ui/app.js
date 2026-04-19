@@ -19,6 +19,7 @@ const PAGE_KEYS = 'keys';
 const PAGE_LOGIN = 'login';
 const PAGE_SETUP = 'setup';
 const TEST_BUTTON_LABEL = 'Test connection';
+const VERSION_PREFIX_PATTERN = /^v/i;
 const ICON_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
 const ICON_X = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 const ICON_EDIT = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
@@ -317,7 +318,7 @@ function setStatusDot(selector, ok) {
     return;
   }
 
-  dot.classList.remove('idle', 'online', 'offline');
+  dot.classList.remove('idle', 'online', 'offline', 'warning');
   dot.classList.add(ok ? 'online' : 'offline');
 }
 
@@ -358,12 +359,91 @@ function setExternalLink(selector, value) {
 }
 
 /**
+ * Format a version with a leading v for display.
+ * @param {string} value - Version value.
+ * @returns {string}
+ */
+function formatVersion(value) {
+  const clean = String(value || '').trim().replace(VERSION_PREFIX_PATTERN, '');
+  return clean ? `v${clean}` : EMPTY_TEXT;
+}
+
+/**
+ * Render a command list into a monospace block.
+ * @param {string} selector - Command block selector.
+ * @param {Array<string>} commands - Commands to render.
+ * @returns {void}
+ */
+function setCommandList(selector, commands) {
+  setText(selector, Array.isArray(commands) ? commands.join('\n') : '');
+}
+
+/**
+ * Render top-nav update status.
+ * @param {Object} update - Update status payload.
+ * @returns {void}
+ */
+function renderUpdateStatus(update) {
+  const currentVersion = formatVersion(update?.current_version);
+  const latestVersion = formatVersion(update?.latest_version);
+  const versionButton = find('#nav-version');
+  const releaseLink = find('#version-release-link');
+  const commands = find('#version-commands');
+
+  if (!versionButton) {
+    return;
+  }
+
+  versionButton.classList.remove('update-available', 'update-unavailable');
+  versionButton.setAttribute('aria-label', `Turnstile ${currentVersion}`);
+  if (!update || !update.checked) {
+    versionButton.classList.add('update-unavailable');
+    versionButton.setAttribute('aria-label', `Turnstile ${currentVersion}. Update check unavailable.`);
+    setText('#version-title', 'Update check unavailable');
+    setText('#version-detail', `Current ${currentVersion}`);
+    releaseLink?.classList.add('hidden');
+    commands?.classList.add('hidden');
+    return;
+  }
+
+  if (update.update_available) {
+    versionButton.classList.add('update-available');
+    versionButton.setAttribute('aria-label', `Turnstile ${currentVersion}. Update ${latestVersion} available.`);
+    setText('#version-title', `${latestVersion} is available`);
+    setText('#version-detail', `Current ${currentVersion} · Latest ${latestVersion}`);
+    setCommandList('#version-node-command', update.commands?.bare_node);
+    setCommandList('#version-docker-command', update.commands?.docker);
+    setText('#version-docker-image', update.docker_image || '');
+    commands?.classList.remove('hidden');
+  } else {
+    setText('#version-title', 'Turnstile is up to date');
+    setText('#version-detail', `Current ${currentVersion} · Latest ${latestVersion}`);
+    commands?.classList.add('hidden');
+  }
+
+  if (releaseLink && update.release_url) {
+    releaseLink.href = update.release_url;
+    releaseLink.classList.remove('hidden');
+  }
+}
+
+/**
  * Load health data and update shared shell labels.
  * @returns {Promise<Object>}
  */
 async function loadHealth() {
   const health = await api('api/v1/health');
   setText('#nav-version', `v${health.version}`);
+
+  api('api/v1/update')
+    .then(renderUpdateStatus)
+    .catch(() => {
+      renderUpdateStatus({
+        checked: false,
+        current_version: health.version
+      });
+    });
+
   return health;
 }
 
@@ -373,8 +453,12 @@ async function loadHealth() {
  */
 async function loadDashboard() {
   const health = await loadHealth();
-  const config = await api('api/v1/config');
-  const keys = await api('api/v1/keys');
+  const results = await Promise.all([
+    api('api/v1/config'),
+    api('api/v1/keys')
+  ]);
+  const config = results[0];
+  const keys = results[1];
   const allConnected = Boolean(health.prowlarr && health.torrent_client_connected);
 
   setStatusDot('#health-dot', allConnected);

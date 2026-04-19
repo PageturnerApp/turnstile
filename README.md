@@ -9,6 +9,7 @@
 ### A self-hosted download provider bridge for [Pageturner](https://getpageturner.com) and other apps
 
 [![CI](https://github.com/PageturnerApp/turnstile/actions/workflows/ci.yml/badge.svg)](https://github.com/PageturnerApp/turnstile/actions/workflows/ci.yml)
+[![Release](https://github.com/PageturnerApp/turnstile/actions/workflows/release.yml/badge.svg)](https://github.com/PageturnerApp/turnstile/actions/workflows/release.yml)
 [![License: AGPL v3](https://img.shields.io/github/license/PageturnerApp/turnstile?color=3A9E6B)](LICENSE)
 [![Node.js >=18](https://img.shields.io/badge/node-%3E%3D18-3A9E6B)](package.json)
 [![Docker ready](https://img.shields.io/badge/docker-ready-3A9E6B)](Dockerfile)
@@ -211,14 +212,29 @@ systemctl --user restart turnstile.service
 
 ## Updating
 
+The top-right version pill checks the latest GitHub Release and turns red when an update is available. Hover or focus the version pill to see release notes and manual update commands. Turnstile never silently pulls code or restarts itself.
+
+### Bare Node / Ultra.cc
+
 ```bash
 cd ~/turnstile
-git pull
-npm install
+git fetch --tags
+git checkout v1.0.1
+npm install --omit=dev
 systemctl --user restart turnstile.service
 ```
 
+Replace `v1.0.1` with the release shown in the version pill or on the [releases page](https://github.com/PageturnerApp/turnstile/releases).
+
 If your service uses the Node 22 workaround from Step 8, keep the `--no-experimental-fetch` flag after updating.
+
+### Docker
+
+```bash
+cd ~/turnstile
+docker compose pull
+docker compose up -d
+```
 
 ## Installation — Docker
 
@@ -230,6 +246,10 @@ nano .env  # fill in your config
 docker compose up -d
 # Visit http://your-server-ip:7878/ui to complete setup
 ```
+
+For Docker installs, set `DOWNLOADS_PATH=/downloads` in `.env`. The compose file mounts `/home/user/downloads` on the host to `/downloads` inside the container; change the left side of that volume to your real host downloads folder.
+
+The default compose file uses the published image at `ghcr.io/pageturnerapp/turnstile:latest`. To build locally instead, replace the `image` line with `build: .`.
 
 ## Installation — Bare Node
 
@@ -356,6 +376,16 @@ curl -X PUT -b cookie.txt "http://localhost:7878/api/v1/keys/KEY_ID" \
 curl -X DELETE -b cookie.txt "http://localhost:7878/api/v1/keys/KEY_ID"
 ```
 
+### Update status
+
+Requires an authenticated UI session.
+
+```bash
+curl -b cookie.txt "http://localhost:7878/api/v1/update"
+```
+
+This checks the latest GitHub Release, returns the installed version, and provides manual update commands for Bare Node and Docker installs.
+
 ## Download behavior
 
 Turnstile always gives clients one download URL, even when the finished torrent contains multiple files:
@@ -416,6 +446,39 @@ npm pack --dry-run
 ```
 
 Confirm the package output does not include `.env`, logs, downloaded files, or seedbox-specific configuration.
+
+## Release process
+
+Turnstile releases are tag-driven. Publishing a tag like `v1.0.1` runs the release workflow, repeats the verification checks on Node 18, 20, and 22, validates that the tag matches `package.json`, publishes a Docker image to GitHub Container Registry, and creates a GitHub Release with generated notes.
+
+For the first public release, create the `v1.0.0` tag from a clean `main` branch:
+
+```bash
+git checkout main
+git pull
+git tag v1.0.0
+git push origin main --tags
+```
+
+For later patch releases:
+
+```bash
+git checkout main
+git pull
+npm version patch
+git push origin main --tags
+```
+
+Use `npm version minor` or `npm version major` when the change warrants it. Published Docker images use these tags:
+
+```text
+ghcr.io/pageturnerapp/turnstile:v1.0.1
+ghcr.io/pageturnerapp/turnstile:latest
+```
+
+After the first image is published, confirm the GitHub Container Registry package is public so Docker users can pull it without logging in.
+
+The in-app update checker only reads public GitHub Release metadata. It does not install updates, write files, run git commands, or restart Turnstile.
 
 ## Contributing
 
