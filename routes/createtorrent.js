@@ -18,6 +18,48 @@ const MAGNET_PROTOCOL = 'magnet:';
 const HTTP_URL_PATTERN = /^https?:\/\//i;
 const CACHE_TERM_PARAMS = ['dn', 'name', 'title', 'file'];
 
+const PROWLARR_RECENT_MATCH_THRESHOLD = 90;
+const PROWLARR_RECENT_MATCH_RETRIES = 10;
+const PROWLARR_RECENT_MATCH_DELAY_MS = 1500;
+
+/**
+ * Pause for a short delay.
+ * @param {number} ms - Milliseconds to wait.
+ * @returns {Promise<void>}
+ */
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Determine whether a torrent name strongly matches any expected search term.
+ * @param {string} torrentName - Candidate torrent name.
+ * @param {Array<string>} terms - Expected title/release terms.
+ * @returns {boolean}
+ */
+function matchesRequestedTorrentName(torrentName, terms) {
+  return terms.some((term) => localFiles.scoreLocalNameMatch(term, torrentName) >= PROWLARR_RECENT_MATCH_THRESHOLD);
+}
+
+/**
+ * Wait for qBittorrent to expose the newly grabbed torrent with a matching name.
+ * @param {Object} torrentClient - Torrent client adapter.
+ * @param {Array<string>} terms - Expected title/release terms.
+ * @returns {Promise<Object|null>}
+ */
+async function waitForRecentlyGrabbedTorrent(torrentClient, terms) {
+  for (let attempt = 0; attempt < PROWLARR_RECENT_MATCH_RETRIES; attempt += 1) {
+    const recent = await torrentClient.getRecentlyAdded();
+    if (recent && matchesRequestedTorrentName(recent.name || '', terms)) {
+      return recent;
+    }
+
+    await delay(PROWLARR_RECENT_MATCH_DELAY_MS);
+  }
+
+  return null;
+}
+
 /**
  * Add a unique non-empty term to a cache search term list.
  * @param {Array<string>} terms - Search terms.
@@ -70,9 +112,32 @@ function getCachedDownload(terms, req) {
 
   const config = configStore.getConfig();
   const keyDownloadsPath = downloads.getKeyDownloadsPath(req.apiKey, config);
-  const matched = terms
-    .map((term) => localFiles.matchesLocal(term, keyDownloadsPath, config.downloadsPath)[0])
-    .find(Boolean);
+  let matched = null;
+
+  terms.some((term) => {
+    const candidates = localFiles.matchesLocal(term, keyDownloadsPath, config.downloadsPath)
+      .map((candidate) => ({
+        candidate,
+        score: localFiles.scoreLocalNameMatch(term, candidate.name)
+      }))
+      .sort((left, right) => right.score - left.score || left.candidate.name.localeCompare(right.candidate.name));
+
+    if (!candidates.length) {
+      return false;
+    }
+
+    const best = candidates[0];
+    const runnerUp = candidates[1] || null;
+    const hasStrongLead = !runnerUp || best.score - runnerUp.score >= 10;
+    const isStrictEnough = best.score >= 90;
+
+    if (isStrictEnough && hasStrongLead) {
+      matched = best.candidate;
+      return true;
+    }
+
+    return false;
+  });
 
   return matched ? {
     torrent_id: 'local-cached',
@@ -127,8 +192,10 @@ async function createTorrentRoute(req, res) {
       name: added.name
     };
   } else if (prowlarr.isProwlarrDownloadUrl(magnet)) {
-    await prowlarr.grab(magnet);
-    torrent = await torrentClient.getRecentlyAdded();
+    const expectedTerms = getCacheSearchTerms(req.body || {}, magnet);
+    const savePath = downloads.getKeyDownloadsPath(req.apiKey, config);
+    await torrentClient.addMagnet(magnet, savePath);
+    torrent = await waitForRecentlyGrabbedTorrent(torrentClient, expectedTerms);
   } else {
     responses.sendError(res, responses.HTTP_BAD_REQUEST, 'Please provide a magnet link, direct torrent URL, or Prowlarr download URL.');
     return;

@@ -76,7 +76,7 @@ function assertProwlarrConfigured() {
  */
 function normalizeSearchResults(results) {
   return results.map((result) => ({
-    id: result.guid || result.infoHash || result.downloadUrl || result.title,
+    id: result.magnetUrl || result.downloadUrl || result.guid || result.infoHash || result.title,
     title: result.title || 'Untitled result',
     size: result.size || 0,
     seeders: Object.prototype.hasOwnProperty.call(result, 'seeders') ? result.seeders : null,
