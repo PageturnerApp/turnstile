@@ -42,15 +42,38 @@ function matchesRequestedTorrentName(torrentName, terms) {
 }
 
 /**
- * Wait for qBittorrent to expose the newly grabbed torrent with a matching name.
+ * Determine whether a recent torrent is different from the pre-grab baseline.
+ * @param {Object|null} recentTorrent - Latest recent torrent.
+ * @param {Object|null} previousRecentTorrent - Recent torrent before the grab.
+ * @returns {boolean}
+ */
+function isDifferentRecentTorrent(recentTorrent, previousRecentTorrent) {
+  if (!recentTorrent || !recentTorrent.hash) {
+    return false;
+  }
+
+  if (!previousRecentTorrent || !previousRecentTorrent.hash) {
+    return true;
+  }
+
+  return recentTorrent.hash !== previousRecentTorrent.hash;
+}
+
+/**
+ * Wait for the torrent client to expose a newly grabbed torrent that can be matched safely.
  * @param {Object} torrentClient - Torrent client adapter.
  * @param {Array<string>} terms - Expected title/release terms.
+ * @param {Object|null} previousRecentTorrent - Recent torrent before the grab.
  * @returns {Promise<Object|null>}
  */
-async function waitForRecentlyGrabbedTorrent(torrentClient, terms) {
+async function waitForRecentlyGrabbedTorrent(torrentClient, terms, previousRecentTorrent) {
+  const hasExpectedTerms = terms.length > 0;
+
   for (let attempt = 0; attempt < PROWLARR_RECENT_MATCH_RETRIES; attempt += 1) {
     const recent = await torrentClient.getRecentlyAdded();
-    if (recent && matchesRequestedTorrentName(recent.name || '', terms)) {
+    const isNewRecentTorrent = isDifferentRecentTorrent(recent, previousRecentTorrent);
+
+    if (recent && isNewRecentTorrent && (!hasExpectedTerms || matchesRequestedTorrentName(recent.name || '', terms))) {
       return recent;
     }
 
@@ -89,7 +112,7 @@ function getCacheSearchTerms(body, link) {
     const parsedUrl = new URL(link);
     CACHE_TERM_PARAMS.forEach((param) => addCacheSearchTerm(terms, parsedUrl.searchParams.get(param)));
 
-    if (parsedUrl.protocol !== 'magnet:') {
+    if (parsedUrl.protocol !== 'magnet:' && !prowlarr.isProwlarrDownloadUrl(link)) {
       addCacheSearchTerm(terms, parsedUrl.pathname.split('/').pop());
     }
   } catch (error) {
@@ -193,16 +216,16 @@ async function createTorrentRoute(req, res) {
     };
   } else if (prowlarr.isProwlarrDownloadUrl(magnet)) {
     const expectedTerms = getCacheSearchTerms(req.body || {}, magnet);
-    const savePath = downloads.getKeyDownloadsPath(req.apiKey, config);
-    await torrentClient.addMagnet(magnet, savePath);
-    torrent = await waitForRecentlyGrabbedTorrent(torrentClient, expectedTerms);
+    const previousRecentTorrent = await torrentClient.getRecentlyAdded();
+    await prowlarr.grab(magnet);
+    torrent = await waitForRecentlyGrabbedTorrent(torrentClient, expectedTerms, previousRecentTorrent);
   } else {
     responses.sendError(res, responses.HTTP_BAD_REQUEST, 'Please provide a magnet link, direct torrent URL, or Prowlarr download URL.');
     return;
   }
 
   if (!torrent) {
-    responses.sendError(res, responses.HTTP_SERVER_ERROR, 'The download was sent to Prowlarr, but Turnstile could not find it in the torrent client yet.');
+    responses.sendError(res, responses.HTTP_SERVER_ERROR, 'The download was sent to Prowlarr, but Turnstile could not confidently match the new torrent in the client yet.');
     return;
   }
 
@@ -217,3 +240,8 @@ async function createTorrentRoute(req, res) {
 router.post('/', auth.requireApiKey, responses.asyncHandler(createTorrentRoute));
 
 module.exports = router;
+module.exports._private = {
+  getCacheSearchTerms,
+  isDifferentRecentTorrent,
+  matchesRequestedTorrentName
+};

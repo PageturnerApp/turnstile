@@ -82,7 +82,7 @@ function normalizeSearchResults(results) {
     seeders: Object.prototype.hasOwnProperty.call(result, 'seeders') ? result.seeders : null,
     indexer: result.indexer || result.indexerName || 'Unknown',
     cached: false,
-    downloadUrl: result.downloadUrl || result.magnetUrl || result.guid
+    downloadUrl: result.magnetUrl || result.downloadUrl || result.guid
   }));
 }
 
@@ -185,5 +185,8 @@ module.exports = {
   search,
   grab,
   isProwlarrDownloadUrl,
-  testConnection
+  testConnection,
+  _private: {
+    normalizeSearchResults
+  }
 };
