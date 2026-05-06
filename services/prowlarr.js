@@ -76,13 +76,13 @@ function assertProwlarrConfigured() {
  */
 function normalizeSearchResults(results) {
   return results.map((result) => ({
-    id: result.guid || result.infoHash || result.downloadUrl || result.title,
+    id: result.magnetUrl || result.downloadUrl || result.guid || result.infoHash || result.title,
     title: result.title || 'Untitled result',
     size: result.size || 0,
     seeders: Object.prototype.hasOwnProperty.call(result, 'seeders') ? result.seeders : null,
     indexer: result.indexer || result.indexerName || 'Unknown',
     cached: false,
-    downloadUrl: result.downloadUrl || result.magnetUrl || result.guid
+    downloadUrl: result.magnetUrl || result.downloadUrl || result.guid
   }));
 }
 
@@ -185,5 +185,8 @@ module.exports = {
   search,
   grab,
   isProwlarrDownloadUrl,
-  testConnection
+  testConnection,
+  _private: {
+    normalizeSearchResults
+  }
 };
