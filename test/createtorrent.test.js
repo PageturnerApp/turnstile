@@ -6,10 +6,12 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const configStore = require('../config');
 const createTorrentRoute = require('../routes/createtorrent');
 
 test('getCacheSearchTerms skips generic Prowlarr download path names', () => {
-  const terms = createTorrentRoute._private.getCacheSearchTerms({}, 'http://localhost:9696/api/v1/indexer/42/download?apikey=example');
+  const config = configStore.getConfig();
+  const terms = createTorrentRoute._private.getCacheSearchTerms({}, `${config.prowlarrUrl}/1/download?apikey=example`);
   assert.deepEqual(terms, []);
 });
 
@@ -34,4 +36,46 @@ test('isDifferentRecentTorrent only accepts a new hash', () => {
 
   assert.equal(createTorrentRoute._private.isDifferentRecentTorrent(sameRecentTorrent, previousRecentTorrent), false);
   assert.equal(createTorrentRoute._private.isDifferentRecentTorrent(newRecentTorrent, previousRecentTorrent), true);
+});
+
+test('isConfidentTorrentMatch accepts equivalent release names from the torrent client', () => {
+  const previousRecentTorrent = {
+    hash: 'old-hash',
+    name: 'Older release'
+  };
+  const torrent = {
+    hash: 'new-hash',
+    name: 'Matt Dinniman - [Dungeon Crawler Carl Audio Immersion Tunnel - 1] - Dungeon Crawler Carl - Audio Immersion Tunnel Season 1 (Jeff Hays).m4b'
+  };
+  const terms = ['Dungeon Crawler Carl: Audio Immersion Tunnel Season 1 by Matt Dinniman [ENG / M4B]'];
+
+  assert.equal(createTorrentRoute._private.isConfidentTorrentMatch(torrent, terms, previousRecentTorrent, false), true);
+});
+
+test('buildAddedTorrentFallback rejects unchanged recent hashes', () => {
+  const previousRecentTorrent = {
+    hash: 'same-hash',
+    name: 'Older release'
+  };
+  const added = {
+    hash: 'same-hash',
+    name: 'Dungeon Crawler Carl: Audio Immersion Tunnel Season 1 by Matt Dinniman [ENG / M4B]'
+  };
+  const terms = ['Dungeon Crawler Carl: Audio Immersion Tunnel Season 1 by Matt Dinniman [ENG / M4B]'];
+
+  assert.equal(createTorrentRoute._private.buildAddedTorrentFallback(added, terms, previousRecentTorrent, false), null);
+});
+
+test('isConfidentTorrentMatch can trust a fresh authoritative hash even when the torrent name is shortened', () => {
+  const previousRecentTorrent = {
+    hash: 'old-hash',
+    name: 'Older release'
+  };
+  const torrent = {
+    hash: 'new-hash',
+    name: '03 Children of Memory'
+  };
+  const terms = ['Children of Memory by Adrian Tchaikovsky [ENG / M4B]'];
+
+  assert.equal(createTorrentRoute._private.isConfidentTorrentMatch(torrent, terms, previousRecentTorrent, true), true);
 });
