@@ -1,6 +1,6 @@
 {
   "name": "turnstile",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Self-hosted download provider bridge for Pageturner",
   "main": "index.js",
   "license": "AGPL-3.0-only",
